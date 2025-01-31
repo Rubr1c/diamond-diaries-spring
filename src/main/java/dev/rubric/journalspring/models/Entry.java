@@ -21,7 +21,6 @@ public class Entry {
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-    //TODO: create folder model
     @ManyToOne
     @Column(name = "folder_id")
     private Folder folder;
