@@ -16,6 +16,7 @@ public class Media {
     @Column(nullable = false)
     private String url;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MediaType type;
 
