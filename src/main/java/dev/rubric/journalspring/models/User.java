@@ -1,4 +1,4 @@
-package models;
+package dev.rubric.journalspring.models;
 
 import jakarta.persistence.*;
 import org.hibernate.type.descriptor.jdbc.SmallIntJdbcType;
