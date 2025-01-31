@@ -2,8 +2,9 @@ package dev.rubric.journalspring.models;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.;
 
 @Entity
 @Table(
@@ -41,7 +42,7 @@ public class Entry {
     private Integer wordCount = 0;
 
     @Column(name = "journal_date", nullable = false)
-    private Date journalDate;
+    private LocalDate journalDate;
     @Column(name = "date_created", nullable = false)
     private ZonedDateTime dateCreated;
     @Column(name = "last_edited")
@@ -56,7 +57,7 @@ public class Entry {
                  String content,
                  Set<Tag> tags,
                  Integer wordCount,
-                 Date journalDate,
+                 LocalDate journalDate,
                  ZonedDateTime dateCreated) {
         this.publicId = UUID.randomUUID();
         this.user = user;
@@ -127,11 +128,11 @@ public class Entry {
         this.wordCount = wordCount;
     }
 
-    public Date getJournalDate() {
+    public LocalDate getJournalDate() {
         return journalDate;
     }
 
-    public void setJournalDate(Date journalDate) {
+    public void setJournalDate(LocalDate journalDate) {
         this.journalDate = journalDate;
     }
 
