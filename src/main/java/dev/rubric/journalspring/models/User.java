@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import org.hibernate.type.descriptor.jdbc.SmallIntJdbcType;
 
 import java.time.ZonedDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Entity
@@ -30,11 +31,11 @@ public class User {
     @Column(name = "verification_code")
     private Integer verificationCode;
     @Column(name = "is_activated")
-    private boolean isActivated = false;
+    private Boolean isActivated = false;
 
     @Column(name = "last_login")
     private ZonedDateTime lastLogin;
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private ZonedDateTime createdAt;
     @Column(name = "profile_picture", nullable = false)
     private String profilePicture;
@@ -72,8 +73,8 @@ public class User {
         this.publicId = publicId;
     }
 
-    public String getGoogleId() {
-        return googleId;
+    public Optional<String> getGoogleId() {
+        return Optional.ofNullable(googleId);
     }
 
     public void setGoogleId(String googleId) {
@@ -112,24 +113,24 @@ public class User {
         this.streak = streak;
     }
 
-    public Integer getVerificationCode() {
-        return verificationCode;
+    public Optional<Integer> getVerificationCode() {
+        return Optional.ofNullable(verificationCode);
     }
 
     public void setVerificationCode(Integer verificationCode) {
         this.verificationCode = verificationCode;
     }
 
-    public boolean isActivated() {
-        return isActivated;
+    public Optional<Boolean> isActivated() {
+        return Optional.ofNullable(isActivated);
     }
 
     public void setActivated(boolean activated) {
         isActivated = activated;
     }
 
-    public ZonedDateTime getLastLogin() {
-        return lastLogin;
+    public Optional<ZonedDateTime> getLastLogin() {
+        return Optional.ofNullable(lastLogin);
     }
 
     public void setLastLogin(ZonedDateTime lastLogin) {

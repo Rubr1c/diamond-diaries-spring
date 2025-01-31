@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 
 import java.time.ZonedDateTime;
 import java.util.Date;
+import java.util.Optional;
 import java.util.UUID;
 
 @Entity
@@ -87,8 +88,8 @@ public class Entry {
         this.user = user;
     }
 
-    public Folder getFolder() {
-        return folder;
+    public Optional<Folder> getFolder() {
+        return Optional.ofNullable(folder);
     }
 
     public void setFolder(Folder folder) {
@@ -135,8 +136,8 @@ public class Entry {
         this.dateCreated = dateCreated;
     }
 
-    public ZonedDateTime getLastEdited() {
-        return lastEdited;
+    public Optional<ZonedDateTime> getLastEdited() {
+        return Optional.ofNullable(lastEdited);
     }
 
     public void setLastEdited(ZonedDateTime lastEdited) {
