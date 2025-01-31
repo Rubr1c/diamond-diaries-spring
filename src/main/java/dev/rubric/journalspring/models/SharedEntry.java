@@ -18,7 +18,7 @@ public class SharedEntry {
     @JoinColumn(name = "entry_id")
     private Entry entry;
 
-    @Column(name = "exp", nullable = false)
+    @Column(name = "expiry_time", nullable = false)
     private ZonedDateTime expiryTime;
 
     public SharedEntry(Entry entry, ZonedDateTime expiryTime) {
