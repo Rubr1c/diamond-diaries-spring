@@ -6,8 +6,8 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "media")
-public class Media {
+@Table(name = "shared_entries")
+public class SharedEntry {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -21,13 +21,13 @@ public class Media {
     @Column(name = "exp", nullable = false)
     private ZonedDateTime expiryTime;
 
-    public Media(Entry entry, ZonedDateTime expiryTime) {
+    public SharedEntry(Entry entry, ZonedDateTime expiryTime) {
         this.publicId = UUID.randomUUID();
         this.entry = entry;
         this.expiryTime = expiryTime;
     }
 
-    public Media() {}
+    public SharedEntry() {}
 
     public Long getId() {
         return id;
