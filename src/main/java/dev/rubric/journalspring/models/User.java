@@ -1,7 +1,6 @@
 package dev.rubric.journalspring.models;
 
 import jakarta.persistence.*;
-import org.hibernate.type.descriptor.jdbc.SmallIntJdbcType;
 
 import java.time.ZonedDateTime;
 import java.util.Optional;
