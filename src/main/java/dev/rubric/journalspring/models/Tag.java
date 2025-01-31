@@ -2,6 +2,9 @@ package dev.rubric.journalspring.models;
 
 import jakarta.persistence.*;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Table(name = "tags", indexes = @Index(name = "tag_name_idx", columnList = "name"))
 public class Tag {
@@ -9,8 +12,11 @@ public class Tag {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String name;
+
+    @ManyToMany(mappedBy = "tags")
+    private Set<Entry> entries = new HashSet<>();
 
     public Tag(String name) {
         this.name = name;
@@ -24,5 +30,13 @@ public class Tag {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Set<Entry> getEntries() {
+        return entries;
+    }
+
+    public void setEntries(Set<Entry> entries) {
+        this.entries = entries;
     }
 }

@@ -3,9 +3,7 @@ package dev.rubric.journalspring.models;
 import jakarta.persistence.*;
 
 import java.time.ZonedDateTime;
-import java.util.Date;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Entity
 @Table(
@@ -31,6 +29,14 @@ public class Entry {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @ManyToMany
+    @JoinTable(
+            name = "entry_id",
+            joinColumns = @JoinColumn(name = "entry_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<Tag> tags = new HashSet<>();
+
     @Column(name = "word_count", nullable = false)
     private Integer wordCount = 0;
 
@@ -48,6 +54,7 @@ public class Entry {
                  Folder folder,
                  String title,
                  String content,
+                 Set<Tag> tags,
                  Integer wordCount,
                  Date journalDate,
                  ZonedDateTime dateCreated) {
@@ -56,6 +63,7 @@ public class Entry {
         this.folder = folder;
         this.title = title;
         this.content = content;
+        this.tags = tags;
         this.wordCount = wordCount;
         this.journalDate = journalDate;
         this.dateCreated = dateCreated;
@@ -149,5 +157,13 @@ public class Entry {
 
     public void setFavorite(boolean favorite) {
         isFavorite = favorite;
+    }
+
+    public Set<Tag> getTags() {
+        return tags;
+    }
+
+    public void setTags(Set<Tag> tags) {
+        this.tags = tags;
     }
 }
