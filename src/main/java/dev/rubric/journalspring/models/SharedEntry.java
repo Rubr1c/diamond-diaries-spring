@@ -15,7 +15,7 @@ public class SharedEntry {
     private UUID publicId;
 
     @ManyToOne
-    @Column(name = "entry_id")
+    @JoinColumn(name = "entry_id")
     private Entry entry;
 
     @Column(name = "exp", nullable = false)

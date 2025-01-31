@@ -22,7 +22,7 @@ public class Entry {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
     @ManyToOne
-    @Column(name = "folder_id")
+    @JoinColumn(name = "folder_id")
     private Folder folder;
 
     @Column(nullable = false)

@@ -10,7 +10,7 @@ public class Media {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @ManyToOne
-    @Column(name = "entry_id")
+    @JoinColumn(name = "entry_id")
     private Entry entry;
 
     @Column(nullable = false)
