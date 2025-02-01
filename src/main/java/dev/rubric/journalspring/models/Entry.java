@@ -1,6 +1,7 @@
 package dev.rubric.journalspring.models;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -43,9 +44,10 @@ public class Entry {
 
     @Column(name = "word_count", nullable = false)
     private Integer wordCount = 0;
-
+    @CreationTimestamp
     @Column(name = "journal_date", nullable = false)
     private LocalDate journalDate;
+    @CreationTimestamp
     @Column(name = "date_created", nullable = false)
     private ZonedDateTime dateCreated;
     @Column(name = "last_edited")
@@ -59,9 +61,7 @@ public class Entry {
                  String title,
                  String content,
                  Set<Tag> tags,
-                 Integer wordCount,
-                 LocalDate journalDate,
-                 ZonedDateTime dateCreated) {
+                 Integer wordCount) {
         this.publicId = UUID.randomUUID();
         this.user = user;
         this.folder = folder;
@@ -69,8 +69,6 @@ public class Entry {
         this.content = content;
         this.tags = tags;
         this.wordCount = wordCount;
-        this.journalDate = journalDate;
-        this.dateCreated = dateCreated;
     }
 
     public Entry() {}
@@ -135,16 +133,8 @@ public class Entry {
         return journalDate;
     }
 
-    public void setJournalDate(LocalDate journalDate) {
-        this.journalDate = journalDate;
-    }
-
     public ZonedDateTime getDateCreated() {
         return dateCreated;
-    }
-
-    public void setDateCreated(ZonedDateTime dateCreated) {
-        this.dateCreated = dateCreated;
     }
 
     public Optional<ZonedDateTime> getLastEdited() {

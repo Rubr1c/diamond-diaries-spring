@@ -1,7 +1,9 @@
 package dev.rubric.journalspring.models;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,11 +31,14 @@ public class User {
 
     @Column(name = "verification_code")
     private Integer verificationCode;
+    @Column(name = "code_exp")
+    private LocalDateTime codeExp;
     @Column(name = "is_activated")
     private Boolean isActivated = false;
 
     @Column(name = "last_login")
     private ZonedDateTime lastLogin;
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false)
     private ZonedDateTime createdAt;
     @Column(name = "profile_picture", nullable = false)
@@ -43,14 +48,12 @@ public class User {
                 String username,
                 String email,
                 String password,
-                ZonedDateTime createdAt,
                 String profilePicture) {
         this.publicId = UUID.randomUUID();
         this.googleId = googleId;
         this.username = username;
         this.email = email;
         this.password = password;
-        this.createdAt = createdAt;
         this.profilePicture = profilePicture;
     }
 
@@ -140,15 +143,19 @@ public class User {
         return createdAt;
     }
 
-    public void setCreatedAt(ZonedDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
     public String getProfilePicture() {
         return profilePicture;
     }
 
     public void setProfilePicture(String profilePicture) {
         this.profilePicture = profilePicture;
+    }
+
+    public LocalDateTime getCodeExp() {
+        return codeExp;
+    }
+
+    public void setCodeExp(LocalDateTime codeExp) {
+        this.codeExp = codeExp;
     }
 }
