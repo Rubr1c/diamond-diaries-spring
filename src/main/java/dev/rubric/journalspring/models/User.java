@@ -1,7 +1,9 @@
 package dev.rubric.journalspring.models;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,6 +31,8 @@ public class User {
 
     @Column(name = "verification_code")
     private Integer verificationCode;
+    @Column(name = "code_exp")
+    private LocalDateTime codeExp;
     @Column(name = "is_activated")
     private Boolean isActivated = false;
 
@@ -150,5 +154,13 @@ public class User {
 
     public void setProfilePicture(String profilePicture) {
         this.profilePicture = profilePicture;
+    }
+
+    public LocalDateTime getCodeExp() {
+        return codeExp;
+    }
+
+    public void setCodeExp(LocalDateTime codeExp) {
+        this.codeExp = codeExp;
     }
 }
