@@ -1,6 +1,7 @@
 package dev.rubric.journalspring.models;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.ZonedDateTime;
 
@@ -17,13 +18,13 @@ public class Folder {
     @Column(nullable = false)
     private String name;
 
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false)
     private ZonedDateTime createdAt;
 
-    public Folder(User user, String name, ZonedDateTime createdAt) {
+    public Folder(User user, String name) {
         this.user = user;
         this.name = name;
-        this.createdAt = createdAt;
     }
 
     public Folder() {}
@@ -56,7 +57,4 @@ public class Folder {
         return createdAt;
     }
 
-    public void setCreatedAt(ZonedDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
 }

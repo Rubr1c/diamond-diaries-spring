@@ -38,6 +38,7 @@ public class User {
 
     @Column(name = "last_login")
     private ZonedDateTime lastLogin;
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false)
     private ZonedDateTime createdAt;
     @Column(name = "profile_picture", nullable = false)
@@ -47,14 +48,12 @@ public class User {
                 String username,
                 String email,
                 String password,
-                ZonedDateTime createdAt,
                 String profilePicture) {
         this.publicId = UUID.randomUUID();
         this.googleId = googleId;
         this.username = username;
         this.email = email;
         this.password = password;
-        this.createdAt = createdAt;
         this.profilePicture = profilePicture;
     }
 
@@ -142,10 +141,6 @@ public class User {
 
     public ZonedDateTime getCreatedAt() {
         return createdAt;
-    }
-
-    public void setCreatedAt(ZonedDateTime createdAt) {
-        this.createdAt = createdAt;
     }
 
     public String getProfilePicture() {
