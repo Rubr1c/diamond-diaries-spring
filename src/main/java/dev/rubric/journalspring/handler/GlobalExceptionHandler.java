@@ -17,6 +17,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApplicationException.class)
     public ResponseEntity<Map<String, Object>> handleException(ApplicationException ex) {
+        logger.error("Exception occurred: {}", ex.getMessage(), ex);
         Map<String, Object> response = new HashMap<>();
         response.put("message", ex.getMessage());
         response.put("status", ex.getStatus().value());
