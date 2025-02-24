@@ -32,11 +32,11 @@ public class User implements UserDetails {
     private Integer streak = 0;
 
     @Column(name = "verification_code")
-    private Integer verificationCode;
+    private String verificationCode;
     @Column(name = "code_exp")
     private LocalDateTime codeExp;
     @Column(name = "is_activated")
-    private Boolean isActivated = true;
+    private Boolean isActivated = false;
 
     @Column(name = "last_login")
     private ZonedDateTime lastLogin;
@@ -103,7 +103,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return isActivated != null && isActivated;
+        return isActivated;
     }
 
     public void setUsername(String username) {
@@ -139,11 +139,11 @@ public class User implements UserDetails {
         this.streak = streak;
     }
 
-    public Optional<Integer> getVerificationCode() {
+    public Optional<String> getVerificationCode() {
         return Optional.ofNullable(verificationCode);
     }
 
-    public void setVerificationCode(Integer verificationCode) {
+    public void setVerificationCode(String verificationCode) {
         this.verificationCode = verificationCode;
     }
 
