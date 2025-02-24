@@ -28,7 +28,6 @@ public class UserResponse {
         if (user == null) {
             throw new IllegalArgumentException("User cannot be null");
         }
-        this.publicId = user.getPublicId();
         this.username = user.getDisplayUsername();
         this.email = user.getEmail();
         this.profilePicture = user.getProfilePicture();

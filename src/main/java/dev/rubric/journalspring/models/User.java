@@ -18,8 +18,6 @@ public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "public_id", nullable = false, unique = true)
-    private UUID publicId;
     @Column(name = "google_id")
     private String googleId;
 
@@ -53,7 +51,6 @@ public class User implements UserDetails {
                 String email,
                 String password,
                 String profilePicture) {
-        this.publicId = UUID.randomUUID();
         this.googleId = googleId;
         this.username = username;
         this.email = email;
@@ -71,13 +68,6 @@ public class User implements UserDetails {
         this.id = id;
     }
 
-    public UUID getPublicId() {
-        return publicId;
-    }
-
-    public void setPublicId(UUID publicId) {
-        this.publicId = publicId;
-    }
 
     public Optional<String> getGoogleId() {
         return Optional.ofNullable(googleId);
@@ -87,7 +77,12 @@ public class User implements UserDetails {
         this.googleId = googleId;
     }
 
+    @Override //email
     public String getUsername() {
+        return email;
+    }
+
+    public String getDisplayUsername() {
         return username;
     }
 
