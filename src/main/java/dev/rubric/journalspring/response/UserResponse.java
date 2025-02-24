@@ -8,8 +8,6 @@ import java.util.UUID;
 
 public class UserResponse {
     @JsonProperty
-    private UUID publicId;
-    @JsonProperty
     private String username;
     @JsonProperty
     private String email;
@@ -34,10 +32,6 @@ public class UserResponse {
         this.streak = user.getStreak();
         this.lastLogin = user.getLastLogin().orElse(null);
         this.createdAt = user.getCreatedAt();
-    }
-
-    public UUID getPublicId() {
-        return publicId;
     }
 
     public String getUsername() {
