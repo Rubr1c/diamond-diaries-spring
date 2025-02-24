@@ -17,13 +17,24 @@ public class EnvConfig {
                     .ignoreIfMissing()
                     .load();
 
-            setEnvIfAbsent("JWT_SECRET", dotenv);
-            setEnvIfAbsent("ADMIN_KEY", dotenv);
+            // Database Configuration
             setEnvIfAbsent("POSTGRES_DB", dotenv);
             setEnvIfAbsent("POSTGRES_USER", dotenv);
             setEnvIfAbsent("POSTGRES_PASSWORD", dotenv);
+
+            // Security Configuration
+            setEnvIfAbsent("JWT_SECRET", dotenv);
+            setEnvIfAbsent("ADMIN_KEY", dotenv);
+
+            // Mail Configuration
             setEnvIfAbsent("MAIL_USERNAME", dotenv);
             setEnvIfAbsent("MAIL_PASSWORD", dotenv);
+
+            // OAuth2 Configuration
+            setEnvIfAbsent("GOOGLE_CLIENT_ID", dotenv);
+            setEnvIfAbsent("GOOGLE_CLIENT_SECRET", dotenv);
+            setEnvIfAbsent("OAUTH_REDIRECT_URI", dotenv);
+            setEnvIfAbsent("FRONTEND_URL", dotenv);
 
             logger.info("Environment variables loaded successfully");
         } catch (Exception e) {

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
     private final JwtService jwtService;
     private final AuthService authenticationService;
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     public AuthController(JwtService jwtService, AuthService authenticationService) {
         this.jwtService = jwtService;
@@ -49,5 +50,11 @@ public class AuthController {
     public ResponseEntity<String> resendVerification(@RequestParam String email) {
         authenticationService.resendVerificationCode(email);
         return ResponseEntity.ok("Code Resent");
+    }
+
+    @GetMapping("/login/google")
+    public ResponseEntity<String> googleLogin() {
+        String googleAuthUrl = "/oauth2/authorization/google";
+        return ResponseEntity.ok("To login with Google, redirect to: " + googleAuthUrl);
     }
 }

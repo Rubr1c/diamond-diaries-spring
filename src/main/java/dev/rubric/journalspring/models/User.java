@@ -10,7 +10,6 @@ import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Entity
 @Table(name = "users", indexes = @Index(name = "user_email", columnList = "email"))
@@ -18,14 +17,17 @@ public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(name = "google_id")
     private String googleId;
 
-    @Column(nullable = false, length = 16)
+    @Column(nullable = false, length = 50)
     private String username;
+
     @Column(nullable = false, unique = true)
     private String email;
-    @Column(nullable = false)
+
+    @Column(nullable = true) // Allow null for OAuth users
     private String password;
 
     @Column(nullable = false)
@@ -33,18 +35,22 @@ public class User implements UserDetails {
 
     @Column(name = "verification_code")
     private String verificationCode;
+
     @Column(name = "code_exp")
     private LocalDateTime codeExp;
+
     @Column(name = "is_activated")
     private Boolean isActivated = false;
 
     @Column(name = "last_login")
     private ZonedDateTime lastLogin;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false)
     private ZonedDateTime createdAt;
-    @Column(name = "profile_picture", nullable = false)
-    private String profilePicture;
+
+    @Column(name = "profile_picture")
+    private String profilePicture = "";
 
     public User(String googleId,
             String username,
@@ -55,7 +61,7 @@ public class User implements UserDetails {
         this.username = username;
         this.email = email;
         this.password = password;
-        this.profilePicture = profilePicture;
+        this.profilePicture = profilePicture != null ? profilePicture : "";
     }
 
     public User() {
@@ -77,7 +83,7 @@ public class User implements UserDetails {
         this.googleId = googleId;
     }
 
-    @Override // email
+    @Override
     public String getUsername() {
         return email;
     }
@@ -103,7 +109,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return isActivated;
+        return isActivated != null && isActivated;
     }
 
     public void setUsername(String username) {
@@ -123,6 +129,7 @@ public class User implements UserDetails {
         return List.of();
     }
 
+    @Override
     public String getPassword() {
         return password;
     }
@@ -172,7 +179,7 @@ public class User implements UserDetails {
     }
 
     public void setProfilePicture(String profilePicture) {
-        this.profilePicture = profilePicture;
+        this.profilePicture = profilePicture != null ? profilePicture : "";
     }
 
     public LocalDateTime getCodeExp() {
