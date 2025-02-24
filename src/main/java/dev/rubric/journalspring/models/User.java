@@ -23,7 +23,7 @@ public class User implements UserDetails {
 
     @Column(nullable = false, length = 16)
     private String username;
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String email;
     @Column(nullable = false)
     private String password;
@@ -36,7 +36,7 @@ public class User implements UserDetails {
     @Column(name = "code_exp")
     private LocalDateTime codeExp;
     @Column(name = "is_activated")
-    private Boolean isActivated = false;
+    private Boolean isActivated = true;
 
     @Column(name = "last_login")
     private ZonedDateTime lastLogin;
@@ -47,10 +47,10 @@ public class User implements UserDetails {
     private String profilePicture;
 
     public User(String googleId,
-                String username,
-                String email,
-                String password,
-                String profilePicture) {
+            String username,
+            String email,
+            String password,
+            String profilePicture) {
         this.googleId = googleId;
         this.username = username;
         this.email = email;
@@ -58,7 +58,8 @@ public class User implements UserDetails {
         this.profilePicture = profilePicture;
     }
 
-    public User() {}
+    public User() {
+    }
 
     public Long getId() {
         return id;
@@ -68,7 +69,6 @@ public class User implements UserDetails {
         this.id = id;
     }
 
-
     public Optional<String> getGoogleId() {
         return Optional.ofNullable(googleId);
     }
@@ -77,7 +77,7 @@ public class User implements UserDetails {
         this.googleId = googleId;
     }
 
-    @Override //email
+    @Override // email
     public String getUsername() {
         return email;
     }
@@ -103,7 +103,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return isActivated;
+        return isActivated != null && isActivated;
     }
 
     public void setUsername(String username) {
