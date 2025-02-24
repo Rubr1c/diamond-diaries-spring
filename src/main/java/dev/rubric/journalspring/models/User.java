@@ -10,7 +10,6 @@ import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Entity
 @Table(name = "users", indexes = @Index(name = "user_email", columnList = "email"))
@@ -18,50 +17,55 @@ public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "public_id", nullable = false, unique = true)
-    private UUID publicId;
+
     @Column(name = "google_id")
     private String googleId;
 
-    @Column(nullable = false, length = 16)
+    @Column(nullable = false, length = 50)
     private String username;
-    @Column(nullable = false)
+
+    @Column(nullable = false, unique = true)
     private String email;
-    @Column(nullable = false)
+
+    @Column(nullable = true) // Allow null for OAuth users
     private String password;
 
     @Column(nullable = false)
     private Integer streak = 0;
 
     @Column(name = "verification_code")
-    private Integer verificationCode;
+    private String verificationCode;
+
     @Column(name = "code_exp")
     private LocalDateTime codeExp;
+
     @Column(name = "is_activated")
     private Boolean isActivated = false;
 
     @Column(name = "last_login")
     private ZonedDateTime lastLogin;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false)
     private ZonedDateTime createdAt;
-    @Column(name = "profile_picture", nullable = false)
-    private String profilePicture;
+
+    @Column(name = "profile_picture")
+    private String profilePicture = "";
 
     public User(String googleId,
-                String username,
-                String email,
-                String password,
-                String profilePicture) {
-        this.publicId = UUID.randomUUID();
+            String username,
+            String email,
+            String password,
+            String profilePicture) {
         this.googleId = googleId;
         this.username = username;
         this.email = email;
         this.password = password;
-        this.profilePicture = profilePicture;
+        this.profilePicture = profilePicture != null ? profilePicture : "";
     }
 
-    public User() {}
+    public User() {
+    }
 
     public Long getId() {
         return id;
@@ -69,14 +73,6 @@ public class User implements UserDetails {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public UUID getPublicId() {
-        return publicId;
-    }
-
-    public void setPublicId(UUID publicId) {
-        this.publicId = publicId;
     }
 
     public Optional<String> getGoogleId() {
@@ -87,7 +83,12 @@ public class User implements UserDetails {
         this.googleId = googleId;
     }
 
+    @Override
     public String getUsername() {
+        return email;
+    }
+
+    public String getDisplayUsername() {
         return username;
     }
 
@@ -108,7 +109,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return isActivated;
+        return isActivated != null && isActivated;
     }
 
     public void setUsername(String username) {
@@ -128,6 +129,7 @@ public class User implements UserDetails {
         return List.of();
     }
 
+    @Override
     public String getPassword() {
         return password;
     }
@@ -144,11 +146,11 @@ public class User implements UserDetails {
         this.streak = streak;
     }
 
-    public Optional<Integer> getVerificationCode() {
+    public Optional<String> getVerificationCode() {
         return Optional.ofNullable(verificationCode);
     }
 
-    public void setVerificationCode(Integer verificationCode) {
+    public void setVerificationCode(String verificationCode) {
         this.verificationCode = verificationCode;
     }
 
@@ -177,7 +179,7 @@ public class User implements UserDetails {
     }
 
     public void setProfilePicture(String profilePicture) {
-        this.profilePicture = profilePicture;
+        this.profilePicture = profilePicture != null ? profilePicture : "";
     }
 
     public LocalDateTime getCodeExp() {
