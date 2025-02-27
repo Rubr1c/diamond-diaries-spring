@@ -15,7 +15,7 @@ public class UserService {
     }
 
     public User findByUsername(String username) {
-        return userRepository.findByUsername(username)
+        return userRepository.findByEmail(username)
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
     }
 }

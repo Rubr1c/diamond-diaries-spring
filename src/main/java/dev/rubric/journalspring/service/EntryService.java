@@ -35,8 +35,8 @@ public class EntryService {
                 details.content(),
                 details.tags(),
                 details.wordCount());
-        logger.info("Entry with id {} created for user {}",entry.getId(), user.getId());
         entryRepository.save(entry);
+        logger.info("Entry with id {} created for user {}", entry.getId(), user.getId());
         return new EntryResponse(entry);
 
     }
