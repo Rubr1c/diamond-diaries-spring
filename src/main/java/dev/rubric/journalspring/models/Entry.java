@@ -160,4 +160,8 @@ public class Entry {
     public void setTags(Set<Tag> tags) {
         this.tags = tags;
     }
+
+    public void addTags(Set<Tag> tags) {
+        this.tags.addAll(tags);
+    }
 }
