@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class EntryService {
@@ -26,8 +27,7 @@ public class EntryService {
     public EntryService(EntryRepository entryRepository) {
         this.entryRepository = entryRepository;
     }
-    //TODO: fix return type to EntryResponse
-    public EntryResponse addEntry(User user, EntryDto details){
+    public EntryResponse addEntry(User user, EntryDto details) {
         Entry entry = new Entry(
                 user,
                 details.folder(),
@@ -35,10 +35,10 @@ public class EntryService {
                 details.content(),
                 details.tags(),
                 details.wordCount());
+
         entryRepository.save(entry);
         logger.info("Entry with id {} created for user {}", entry.getId(), user.getId());
         return new EntryResponse(entry);
-
     }
 
     public EntryResponse getEntryById(User user, Long entryId) {
@@ -56,8 +56,11 @@ public class EntryService {
         return new EntryResponse(entry);
     }
 
-    public List<Entry> getAllUserEntries(User user){
-        return entryRepository.findAllByUser(user);
+    public List<EntryResponse> getAllUserEntries(User user){
+        List<Entry> entries = entryRepository.findAllByUser(user);
+        return entries.stream()
+                .map(EntryResponse::new)
+                .collect(Collectors.toList());
     }
 
     public void deleteEntry(User user, Long entryId){
