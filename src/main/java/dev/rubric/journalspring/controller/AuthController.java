@@ -2,6 +2,7 @@ package dev.rubric.journalspring.controller;
 
 import dev.rubric.journalspring.dto.LoginUserDto;
 import dev.rubric.journalspring.dto.RegisterUserDto;
+import dev.rubric.journalspring.dto.UpdatePasswordDto;
 import dev.rubric.journalspring.dto.VerifyUserDto;
 import dev.rubric.journalspring.models.User;
 import dev.rubric.journalspring.response.LoginResponse;
@@ -48,6 +49,18 @@ public class AuthController {
     public ResponseEntity<String> resendVerification(@RequestParam String email) {
         authenticationService.resendVerificationCode(email);
         return ResponseEntity.ok("Code Resent");
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> initiatePasswordReset(@RequestParam String email) {
+        authenticationService.initiatePasswordReset(email);
+        return ResponseEntity.ok("Password reset email sent");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestBody UpdatePasswordDto updatePasswordDto) {
+        authenticationService.updatePassword(updatePasswordDto);
+        return ResponseEntity.ok("Password updated successfully");
     }
 
     @GetMapping("/login/google")

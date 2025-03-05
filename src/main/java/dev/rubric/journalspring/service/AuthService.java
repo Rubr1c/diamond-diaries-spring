@@ -2,6 +2,7 @@ package dev.rubric.journalspring.service;
 
 import dev.rubric.journalspring.dto.LoginUserDto;
 import dev.rubric.journalspring.dto.RegisterUserDto;
+import dev.rubric.journalspring.dto.UpdatePasswordDto;
 import dev.rubric.journalspring.dto.VerifyUserDto;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.User;
@@ -25,6 +26,82 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final MailService mailService;
+
+    public void initiatePasswordReset(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
+
+        user.setVerificationCode(generateVerificationCode());
+        user.setCodeExp(LocalDateTime.now().plusHours(1));
+        sendPasswordResetEmail(user);
+        userRepository.save(user);
+    }
+
+    public void updatePassword(UpdatePasswordDto input) {
+        User user = userRepository.findByEmail(input.email())
+                .orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
+
+        if (user.getVerificationCode().isEmpty()) {
+            throw new ApplicationException("No password reset was requested", HttpStatus.BAD_REQUEST);
+        }
+
+        if (user.getCodeExp().isBefore(LocalDateTime.now())) {
+            throw new ApplicationException("Verification code has expired", HttpStatus.BAD_REQUEST);
+        }
+
+        if (!user.getVerificationCode().get().equals(input.verificationCode())) {
+            throw new ApplicationException("Invalid verification code", HttpStatus.BAD_REQUEST);
+        }
+
+        user.setPassword(passwordEncoder.encode(input.newPassword()));
+        user.setVerificationCode(null);
+        user.setCodeExp(null);
+        userRepository.save(user);
+    }
+
+    private void sendPasswordResetEmail(User user) {
+        String subject = "Diamond Diaries: Password Reset Request";
+        if (user.getVerificationCode().isEmpty()) {
+            throw new ApplicationException("Verification code not set", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        String verificationCode = user.getVerificationCode().get();
+        String htmlMessage = "<html>" +
+                "<head>" +
+                "  <style>" +
+                "    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fafafa; margin: 0; padding: 0; }" +
+                "    .container { max-width: 600px; margin: 50px auto; background-color: #ffffff; padding: 30px; border: 1px solid #eaeaea; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }" +
+                "    .header { text-align: center; padding-bottom: 20px; }" +
+                "    .header h1 { margin: 0; color: #333333; }" +
+                "    .content { color: #555555; font-size: 16px; line-height: 1.5; }" +
+                "    .verification-code { display: inline-block; margin: 20px 0; padding: 10px 20px; background-color: #007bff; color: #ffffff; font-size: 20px; font-weight: bold; border-radius: 5px; }" +
+                "    .footer { text-align: center; font-size: 12px; color: #999999; padding-top: 20px; }" +
+                "  </style>" +
+                "</head>" +
+                "<body>" +
+                "  <div class=\"container\">" +
+                "    <div class=\"header\">" +
+                "      <h1>Diamond Diaries</h1>" +
+                "    </div>" +
+                "    <div class=\"content\">" +
+                "      <p>We received a request to reset your password.</p>" +
+                "      <p>Please use the verification code below to reset your password:</p>" +
+                "      <div class=\"verification-code\">" + verificationCode + "</div>" +
+                "      <p>If you did not request a password reset, please ignore this email.</p>" +
+                "    </div>" +
+                "    <div class=\"footer\">" +
+                "      <p>&copy; 2024 Diamond Diaries. All rights reserved.</p>" +
+                "    </div>" +
+                "  </div>" +
+                "</body>" +
+                "</html>";
+
+        try {
+            mailService.sendEmail(user.getEmail(), subject, htmlMessage);
+        } catch (Exception e) {
+            throw new ApplicationException("Failed to send password reset email", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     public AuthService(
             UserRepository userRepository,
