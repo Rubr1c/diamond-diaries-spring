@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -19,25 +20,34 @@ import java.util.stream.Collectors;
 
 @Service
 public class EntryService {
-    //TODO: Hash entry content
     private static final Logger logger = LoggerFactory.getLogger(EntryService.class);
     private final EntryRepository entryRepository;
+    private final EncryptionService encryptionService;
 
-
-    public EntryService(EntryRepository entryRepository) {
+    @Autowired
+    public EntryService(EntryRepository entryRepository, EncryptionService encryptionService) {
         this.entryRepository = entryRepository;
+        this.encryptionService = encryptionService;
     }
+
     public EntryResponse addEntry(User user, EntryDto details) {
+        // Encrypt the content before saving
+        String encryptedContent = encryptionService.encrypt(details.content());
+        logger.debug("Content encrypted for new entry");
+        
         Entry entry = new Entry(
                 user,
                 details.folder(),
                 details.title(),
-                details.content(),
+                encryptedContent,
                 details.tags(),
                 details.wordCount());
 
         entryRepository.save(entry);
         logger.info("Entry with id {} created for user {}", entry.getId(), user.getId());
+        
+        // Decrypt for the response
+        entry.setContent(details.content()); // Use original content for response
         return new EntryResponse(entry);
     }
 
@@ -52,12 +62,25 @@ public class EntryService {
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
         }
-        //Test to see if Exception prints to console using postman
+        
+        // Decrypt the content before returning
+        String decryptedContent = encryptionService.decrypt(entry.getContent());
+        entry.setContent(decryptedContent);
+        logger.debug("Content decrypted for entry id: {}", entryId);
+
         return new EntryResponse(entry);
     }
 
     public List<EntryResponse> getAllUserEntries(User user){
         List<Entry> entries = entryRepository.findAllByUser(user);
+        
+        // Decrypt all entries' content
+        entries.forEach(entry -> {
+            String decryptedContent = encryptionService.decrypt(entry.getContent());
+            entry.setContent(decryptedContent);
+        });
+        logger.debug("Decrypted content for {} entries", entries.size());
+        
         return entries.stream()
                 .map(EntryResponse::new)
                 .collect(Collectors.toList());
@@ -90,14 +113,20 @@ public class EntryService {
                     HttpStatus.UNAUTHORIZED);
         }
 
-        //TODO: set Tags and Folder
+        // Encrypt the updated content
+        String encryptedContent = encryptionService.encrypt(details.content());
+        logger.debug("Content encrypted for updated entry id: {}", entryId);
+        
         entry.setLastEdited(ZonedDateTime.now());
-        entry.setContent(details.content());
+        entry.setContent(encryptedContent);
         entry.setFavorite(details.isFavorite());
         entry.setTitle(details.title());
         entry.setWordCount(details.wordCount());
 
         entryRepository.save(entry);
+        
+        // Decrypt for the response
+        entry.setContent(details.content()); // Use original content for response
         return new EntryResponse(entry);
     }
 
