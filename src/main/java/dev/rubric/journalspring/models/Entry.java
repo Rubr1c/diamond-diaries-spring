@@ -113,9 +113,7 @@ public class Entry {
         this.title = title;
     }
 
-    public String getContent() {
-        return content;
-    }
+    public String getContent() {return content;}
 
     public void setContent(String content) {
         this.content = content;
@@ -159,5 +157,9 @@ public class Entry {
 
     public void setTags(Set<Tag> tags) {
         this.tags = tags;
+    }
+
+    public void addTags(Set<Tag> tags) {
+        this.tags.addAll(tags);
     }
 }
