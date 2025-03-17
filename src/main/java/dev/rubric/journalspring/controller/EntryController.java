@@ -91,15 +91,6 @@
             return ResponseEntity.noContent().build();
         }
 
-        @GetMapping("/media/{entryId}")
-        public ResponseEntity<List<MediaResponse>> getAllMediaForEntry(@PathVariable long entryId) {
-            User user = getAuthenticatedUser();
-
-            logger.info("User {} is fetching all media for journal entry with id {}", user.getId(), entryId);
-            List<MediaResponse> mediaResponses = mediaService.getMediaByEntryId(entryId);
-
-            return ResponseEntity.ok(mediaResponses);
-        }
 
 
     }

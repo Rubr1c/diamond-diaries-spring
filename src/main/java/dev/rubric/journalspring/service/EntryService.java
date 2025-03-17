@@ -150,5 +150,13 @@ public class EntryService {
         return new EntryResponse(entry);
     }
 
+    //Fetching Entry for MediaController
+    public Entry getEntryEntityById(User user, Long entryId){
+        return entryRepository.findById(entryId)
+                .orElseThrow(() -> new ApplicationException(
+                        String.format("Entry with %d not found", entryId),
+                        HttpStatus.NOT_FOUND));
+    }
+
     
 }
