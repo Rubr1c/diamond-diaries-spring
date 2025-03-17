@@ -1,8 +1,10 @@
 package dev.rubric.journalspring.config;
 
+import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -16,29 +18,30 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 import java.io.IOException;
 import java.util.UUID;
 
+@Service
 public class S3Service {
     private final S3Client s3Client;
 
     @Value("${aws.s3.bucket-name}")
     private String bucketName;
 
-    @Value("${aws.accessKeyId}")
-    private String accessKey;
-
-    @Value("${aws.secretAccessKey}")
-    String secretKey;
-
     public S3Service(@Value("${aws.accessKeyId}") String accessKey,
                      @Value("${aws.secretAccessKey}") String secretKey) {
         this.s3Client = S3Client.builder()
-                .region(Region.US_EAST_1)
+                .region(Region.US_EAST_1) // Adjust to your AWS region
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)))
                 .build();
     }
 
-    public String uploadFile(MultipartFile file) {
+    public String uploadFile(MultipartFile file, MediaType mediaType) {
         try {
-            String key = UUID.randomUUID() + "-" + file.getOriginalFilename();
+            String folder = switch (mediaType) {
+                case IMAGE -> "photos/";
+                case VIDEO -> "videos/";
+                default -> "files/";
+            };
+
+            String key = folder + UUID.randomUUID() + "-" + file.getOriginalFilename();
 
             PutObjectRequest request = PutObjectRequest.builder()
                     .bucket(bucketName)
@@ -58,7 +61,7 @@ public class S3Service {
 
     public void deleteFile(String fileUrl) {
         try {
-            String key = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+            String key = fileUrl.substring(fileUrl.indexOf(".com/") + 5); // Extracts key after the bucket URL
 
             DeleteObjectRequest request = DeleteObjectRequest.builder()
                     .bucket(bucketName)
@@ -70,5 +73,4 @@ public class S3Service {
             throw new ApplicationException("Failed to delete file from S3: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 }
