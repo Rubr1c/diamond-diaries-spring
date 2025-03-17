@@ -28,7 +28,7 @@ public class S3Service {
     public S3Service(@Value("${aws.accessKeyId}") String accessKey,
                      @Value("${aws.secretAccessKey}") String secretKey) {
         this.s3Client = S3Client.builder()
-                .region(Region.US_EAST_1) // Adjust to your AWS region
+                .region(Region.US_EAST_1)
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)))
                 .build();
     }

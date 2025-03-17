@@ -1,15 +1,20 @@
 package dev.rubric.journalspring.service;
 
 import dev.rubric.journalspring.config.S3Service;
+import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
+import dev.rubric.journalspring.models.Entry;
+import dev.rubric.journalspring.models.Media;
 import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.MediaRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Optional;
 
 @Service
 public class MediaService {
@@ -26,24 +31,37 @@ public class MediaService {
     }
 
     public String uploadMedia(Long entryId, MultipartFile file, MediaType mediaType) {
-        if (file.isEmpty()) {
-            logger.error("Media upload failed: file is empty");
-            throw new ApplicationException("Cannot upload an empty file", HttpStatus.BAD_REQUEST);
+        Optional<Entry> entryOptional = entryRepository.findById(entryId);
+        if (entryOptional.isEmpty()) {
+            throw new ApplicationException("Entry not found", HttpStatus.NOT_FOUND);
         }
 
-        String fileUrl = s3Service.uploadFile(file);
-        logger.info("Media with URL {} uploaded successfully", fileUrl);
-        return fileUrl;
+        Entry entry = entryOptional.get();
+
+        try {
+            String fileUrl = s3Service.uploadFile(file, mediaType);
+            Media media = new Media(entry, fileUrl, mediaType);
+            mediaRepository.save(media);
+
+            logger.info("Uploaded media: {} ({} bytes) under type {}", file.getOriginalFilename(), file.getSize(), mediaType);
+            return fileUrl;
+        } catch (Exception e) {
+            logger.error("Error uploading media: {}", e.getMessage());
+            throw new ApplicationException("Failed to upload file", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
-    public void deleteMedia(String fileUrl){
-        if(fileUrl == null || fileUrl.isBlank()){
-            logger.error("Media deletion failed: file URL is empty");
-            throw new ApplicationException("Invalid file URL", HttpStatus.BAD_REQUEST);
+    public void deleteMedia(Long mediaId) {
+        Optional<Media> mediaOptional = mediaRepository.findById(mediaId);
+        if (mediaOptional.isEmpty()) {
+            throw new ApplicationException("Media not found", HttpStatus.NOT_FOUND);
         }
 
-        s3Service.deleteFile(fileUrl);
-        logger.info("Media with URL {} deleted successfully", fileUrl);
+        Media media = mediaOptional.get();
+        s3Service.deleteFile(media.getUrl());
+        mediaRepository.delete(media);
+
+        logger.info("Deleted media with ID: {}", mediaId);
     }
 
 
