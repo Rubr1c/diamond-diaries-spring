@@ -53,17 +53,15 @@ public class MediaService {
         }
     }
 
-    public void deleteMedia(Long mediaId) {
-        Optional<Media> mediaOptional = mediaRepository.findById(mediaId);
-        if (mediaOptional.isEmpty()) {
-            throw new ApplicationException("Media not found", HttpStatus.NOT_FOUND);
+    public void deleteMedia(Long mediaId, Long entryId) {
+        Media media = mediaRepository.findById(mediaId)
+                .orElseThrow(() -> new ApplicationException("Media not found", HttpStatus.NOT_FOUND));
+
+        if (!media.getEntry().getId().equals(entryId)) {
+            throw new ApplicationException("Media does not belong to the specified entry", HttpStatus.BAD_REQUEST);
         }
 
-        Media media = mediaOptional.get();
-        s3Service.deleteFile(media.getUrl());
         mediaRepository.delete(media);
-
-        logger.info("Deleted media with ID: {}", mediaId);
     }
 
     public List<MediaResponse> getMediaByEntryId(Long entryId) {

@@ -53,6 +53,7 @@ public class SecurityConfig {
                                     "/login/**",
                                     "/oauth2/authorization/**",
                                     "/oauth2/callback/**")
+
                             .permitAll()
                             .requestMatchers("/admin/**").permitAll()
                             .anyRequest().authenticated();

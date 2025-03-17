@@ -53,10 +53,10 @@ public class User implements UserDetails {
     private String profilePicture = "";
 
     public User(String googleId,
-            String username,
-            String email,
-            String password,
-            String profilePicture) {
+                String username,
+                String email,
+                String password,
+                String profilePicture) {
         this.googleId = googleId;
         this.username = username;
         this.email = email;

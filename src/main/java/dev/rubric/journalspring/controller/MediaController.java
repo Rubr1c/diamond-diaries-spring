@@ -2,6 +2,7 @@ package dev.rubric.journalspring.controller;
 
 
 import dev.rubric.journalspring.enums.MediaType;
+import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.Entry;
 import dev.rubric.journalspring.models.User;
 import dev.rubric.journalspring.response.MediaResponse;
@@ -20,7 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/v1/media")
+@RequestMapping("/api/v1/media")
 public class MediaController {
     private static final Logger logger = LoggerFactory.getLogger(MediaController.class);
     private final MediaService mediaService;
@@ -45,11 +46,30 @@ public class MediaController {
         return userService.findByUsername(username);
     }
 
-    @GetMapping("/media/{entryId}")
+
+    @GetMapping("/{entryId}")
     public ResponseEntity<List<MediaResponse>> getAllMediaForEntry(@PathVariable long entryId) {
-        User user = getAuthenticatedUser();
+        logger.info("Received request for media of entry {}", entryId);
+
+        User user;
+        try {
+            user = getAuthenticatedUser();
+            logger.info("User authenticated: {}", user.getUsername());
+        } catch (Exception e) {
+            logger.error("Authentication failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            entryService.verifyUserOwnsEntry(user, entryId);
+            logger.info("User {} authorized for entry {}", user.getUsername(), entryId);
+        } catch (Exception e) {
+            logger.error("Authorization failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         logger.info("User {} is fetching all media for journal entry with id {}", user.getId(), entryId);
+
         List<MediaResponse> mediaResponses = mediaService.getMediaByEntryId(entryId);
 
         return ResponseEntity.ok(mediaResponses);
@@ -62,14 +82,14 @@ public class MediaController {
             @RequestParam("mediaType") MediaType mediaType) {
 
         User user = getAuthenticatedUser();
-        Entry entry = entryService.getEntryEntityById(user, entryId); // This will throw if the entry isn't found
+        entryService.verifyUserOwnsEntry(user, entryId);
 
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File must not be empty");
         }
 
         try {
-            String fileUrl = mediaService.uploadMedia(entry.getId(), file, mediaType);
+            String fileUrl = mediaService.uploadMedia(entryId, file, mediaType);
             return ResponseEntity.status(HttpStatus.CREATED).body("File uploaded successfully: " + fileUrl);
         } catch (Exception e) {
             logger.error("Error uploading file: {}", e.getMessage());
@@ -77,14 +97,23 @@ public class MediaController {
         }
     }
 
-    @DeleteMapping("/delete/{mediaId}")
-    public ResponseEntity<?> deleteMedia(@PathVariable Long mediaId) {
+
+    @DeleteMapping("/delete/{mediaId}/entry/{entryId}")
+    public ResponseEntity<?> deleteMedia(@PathVariable Long mediaId, @PathVariable Long entryId) {
+        User user = getAuthenticatedUser();
+
         try {
-            mediaService.deleteMedia(mediaId);
+            // This will throw UNAUTHORIZED if the user doesn't own the entry
+            entryService.verifyUserOwnsEntry(user, entryId);
+            mediaService.deleteMedia(mediaId, entryId);
             return ResponseEntity.ok("Media deleted successfully");
+        } catch (ApplicationException e) {
+            logger.error("Error deleting media: {}", e.getMessage());
+            return ResponseEntity.status(e.getStatus()).body(e.getMessage());
         } catch (Exception e) {
-            logger.error("Error deleting media with id: {}", mediaId);
+            logger.error("Unexpected error deleting media with id: {}", mediaId);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete media");
         }
     }
+
 }
