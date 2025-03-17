@@ -3,9 +3,11 @@ package dev.rubric.journalspring.service;
 import dev.rubric.journalspring.dto.EntryDto;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.Entry;
+import dev.rubric.journalspring.models.Media;
 import dev.rubric.journalspring.models.Tag;
 import dev.rubric.journalspring.models.User;
 import dev.rubric.journalspring.repository.EntryRepository;
+import dev.rubric.journalspring.repository.MediaRepository;
 import dev.rubric.journalspring.response.EntryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,11 +25,13 @@ public class EntryService {
     private static final Logger logger = LoggerFactory.getLogger(EntryService.class);
     private final EntryRepository entryRepository;
     private final EncryptionService encryptionService;
+    private final MediaRepository mediaRepository;
 
     @Autowired
-    public EntryService(EntryRepository entryRepository, EncryptionService encryptionService) {
+    public EntryService(EntryRepository entryRepository, EncryptionService encryptionService, MediaRepository mediaRepository) {
         this.entryRepository = entryRepository;
         this.encryptionService = encryptionService;
+        this.mediaRepository = mediaRepository;
     }
 
     public EntryResponse addEntry(User user, EntryDto details) {
@@ -145,5 +149,6 @@ public class EntryService {
         entryRepository.save(entry);
         return new EntryResponse(entry);
     }
+
     
 }

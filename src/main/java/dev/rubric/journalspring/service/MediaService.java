@@ -7,6 +7,7 @@ import dev.rubric.journalspring.models.Entry;
 import dev.rubric.journalspring.models.Media;
 import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.MediaRepository;
+import dev.rubric.journalspring.response.MediaResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -62,6 +64,13 @@ public class MediaService {
         mediaRepository.delete(media);
 
         logger.info("Deleted media with ID: {}", mediaId);
+    }
+
+    public List<MediaResponse> getMediaByEntryId(Long entryId) {
+        List<Media> mediaList = mediaRepository.findByEntryId(entryId);
+        return mediaList.stream()
+                .map(MediaResponse::new)
+                .toList();
     }
 
 
