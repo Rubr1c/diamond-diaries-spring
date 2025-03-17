@@ -1,9 +1,12 @@
     package dev.rubric.journalspring.controller;
 
     import dev.rubric.journalspring.dto.EntryDto;
+    import dev.rubric.journalspring.models.Media;
     import dev.rubric.journalspring.models.User;
     import dev.rubric.journalspring.response.EntryResponse;
+    import dev.rubric.journalspring.response.MediaResponse;
     import dev.rubric.journalspring.service.EntryService;
+    import dev.rubric.journalspring.service.MediaService;
     import dev.rubric.journalspring.service.UserService;
     import org.slf4j.Logger;
     import org.slf4j.LoggerFactory;
@@ -22,11 +25,14 @@
 
         private final EntryService entryService;
         private final UserService userService;
+        private final MediaService mediaService;
 
 
-        public EntryController(EntryService entryService, UserService userService) {
+
+        public EntryController(EntryService entryService, UserService userService, MediaService mediaService) {
             this.entryService = entryService;
             this.userService = userService;
+            this.mediaService = mediaService;
         }
 
         private User getAuthenticatedUser() {
@@ -85,6 +91,15 @@
             return ResponseEntity.noContent().build();
         }
 
+        @GetMapping("/media/{entryId}")
+        public ResponseEntity<List<MediaResponse>> getAllMediaForEntry(@PathVariable long entryId) {
+            User user = getAuthenticatedUser();
+
+            logger.info("User {} is fetching all media for journal entry with id {}", user.getId(), entryId);
+            List<MediaResponse> mediaResponses = mediaService.getMediaByEntryId(entryId);
+
+            return ResponseEntity.ok(mediaResponses);
+        }
 
 
     }
