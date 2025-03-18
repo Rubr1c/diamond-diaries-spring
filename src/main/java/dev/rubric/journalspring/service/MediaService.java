@@ -61,6 +61,8 @@ public class MediaService {
             throw new ApplicationException("Media does not belong to the specified entry", HttpStatus.BAD_REQUEST);
         }
 
+        s3Service.deleteFile(media.getUrl());
+
         mediaRepository.delete(media);
     }
 

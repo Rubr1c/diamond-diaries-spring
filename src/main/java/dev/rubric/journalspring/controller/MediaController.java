@@ -3,7 +3,6 @@ package dev.rubric.journalspring.controller;
 
 import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
-import dev.rubric.journalspring.models.Entry;
 import dev.rubric.journalspring.models.User;
 import dev.rubric.journalspring.response.MediaResponse;
 import dev.rubric.journalspring.service.EntryService;
@@ -51,22 +50,9 @@ public class MediaController {
     public ResponseEntity<List<MediaResponse>> getAllMediaForEntry(@PathVariable long entryId) {
         logger.info("Received request for media of entry {}", entryId);
 
-        User user;
-        try {
-            user = getAuthenticatedUser();
-            logger.info("User authenticated: {}", user.getUsername());
-        } catch (Exception e) {
-            logger.error("Authentication failed: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+        User user = getAuthenticatedUser();
 
-        try {
-            entryService.verifyUserOwnsEntry(user, entryId);
-            logger.info("User {} authorized for entry {}", user.getUsername(), entryId);
-        } catch (Exception e) {
-            logger.error("Authorization failed: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+        entryService.verifyUserOwnsEntry(user, entryId);
 
         logger.info("User {} is fetching all media for journal entry with id {}", user.getId(), entryId);
 
@@ -76,7 +62,7 @@ public class MediaController {
     }
 
     @PostMapping(value = "/upload", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> uploadMedia(
+    public ResponseEntity<String> uploadMedia(
             @RequestParam("entryId") Long entryId,
             @RequestParam("file") MultipartFile file,
             @RequestParam("mediaType") MediaType mediaType) {
