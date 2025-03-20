@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Stream;
 
 @Service
 public class AuthService {
@@ -37,17 +38,59 @@ public class AuthService {
         this.mailService = mailService;
     }
 
+    private boolean passwordIsValid(String password) {
+        return password.length() >= 8 &&
+                password.chars().mapToObj(c -> (char)c).anyMatch(Character::isUpperCase) &&
+                password.chars().mapToObj(c -> (char)c).anyMatch(Character::isLowerCase) &&
+                password.chars().mapToObj(c -> (char)c).anyMatch(Character::isDigit) &&
+                password.chars().mapToObj(c -> (char)c).anyMatch(ch -> !Character.isLetterOrDigit(ch));
+    }
+
+    private boolean emailIsValid(String email) {
+        if (email == null) {
+            return false;
+        }
+        String emailRegex = "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$";
+        return email.matches(emailRegex);
+    }
+
+    private boolean usernameIsValid(String username) {
+        return username.length() >= 3 && username.length() <= 16;
+    }
+
+
     public User signup(RegisterUserDto input) {
-        // Check if email already exists
+
+        if (input.email() == null ||
+            input.username() == null ||
+            input.password() == null) {
+            throw new ApplicationException("Missing fields", HttpStatus.BAD_REQUEST);
+        }
+
+        if (!emailIsValid(input.email())) {
+            throw new ApplicationException("Invalid email", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+
         if (userRepository.findByEmail(input.email()).isPresent()) {
             throw new ApplicationException("Email already registered", HttpStatus.CONFLICT);
         }
 
-        User user = new User(null,
+        if (!usernameIsValid(input.username())) {
+            throw new ApplicationException("Username does not meet requirements", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+
+        if (!passwordIsValid(input.password())) {
+            throw new ApplicationException("Password does not meet requirements", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+
+
+        User user = new User(
+                null,
                 input.username(),
                 input.email(),
                 passwordEncoder.encode(input.password()),
-                "");
+                ""
+        );
 
         user.setVerificationCode(generateVerificationCode());
         user.setCodeExp(LocalDateTime.now().plusMinutes(15));
