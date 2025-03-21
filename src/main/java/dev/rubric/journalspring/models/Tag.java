@@ -39,4 +39,8 @@ public class Tag {
     public void setEntries(Set<Entry> entries) {
         this.entries = entries;
     }
+
+    public Long getId() {
+        return id;
+    }
 }
