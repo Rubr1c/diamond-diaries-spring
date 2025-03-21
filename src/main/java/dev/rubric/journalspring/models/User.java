@@ -42,6 +42,9 @@ public class User implements UserDetails {
     @Column(name = "is_activated")
     private Boolean isActivated = false;
 
+    @Column(name = "2fa_enabled")
+    private Boolean enabled2fa = false;
+
     @Column(name = "last_login")
     private ZonedDateTime lastLogin;
 
@@ -188,5 +191,13 @@ public class User implements UserDetails {
 
     public void setCodeExp(LocalDateTime codeExp) {
         this.codeExp = codeExp;
+    }
+
+    public Boolean isEnabled2fa() {
+        return enabled2fa != null && enabled2fa;
+    }
+
+    public void setEnabled2fa(Boolean enabled2fa) {
+        this.enabled2fa = enabled2fa;
     }
 }
