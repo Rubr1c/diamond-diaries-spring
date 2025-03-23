@@ -59,4 +59,8 @@ public class Media {
     public void setType(MediaType type) {
         this.type = type;
     }
+
+    public MediaType getMediaType() {
+        return type;
+    }
 }

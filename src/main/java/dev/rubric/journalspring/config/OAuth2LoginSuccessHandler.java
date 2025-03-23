@@ -74,7 +74,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                         googleId,
                         name,
                         email,
-                        "", // Empty password for OAuth users
+                        null, // Empty password for OAuth users
                         picture != null ? picture : "");
                 user.setActivated(true); // Google-authenticated users are automatically verified
                 user = userRepository.save(user);

@@ -3,9 +3,11 @@ package dev.rubric.journalspring.service;
 import dev.rubric.journalspring.dto.EntryDto;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.Entry;
+import dev.rubric.journalspring.models.Media;
 import dev.rubric.journalspring.models.Tag;
 import dev.rubric.journalspring.models.User;
 import dev.rubric.journalspring.repository.EntryRepository;
+import dev.rubric.journalspring.repository.MediaRepository;
 import dev.rubric.journalspring.response.EntryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,11 +26,13 @@ public class EntryService {
     private static final Logger logger = LoggerFactory.getLogger(EntryService.class);
     private final EntryRepository entryRepository;
     private final EncryptionService encryptionService;
+    private final MediaRepository mediaRepository;
 
     @Autowired
-    public EntryService(EntryRepository entryRepository, EncryptionService encryptionService) {
+    public EntryService(EntryRepository entryRepository, EncryptionService encryptionService, MediaRepository mediaRepository) {
         this.entryRepository = entryRepository;
         this.encryptionService = encryptionService;
+        this.mediaRepository = mediaRepository;
     }
 
     public Entry addEntry(User user, EntryDto details) {
@@ -73,6 +77,7 @@ public class EntryService {
     }
 
     public List<Entry> getAllUserEntries(User user){
+
         List<Entry> entries = entryRepository.findAllByUser(user);
         
         // Decrypt all entries' content
@@ -147,5 +152,19 @@ public class EntryService {
         return entry;
     }
 
+
+    //Fetching Entry
+    public void verifyUserOwnsEntry(User user, Long entryId){
+        Entry entry = entryRepository.findById(entryId)
+                .orElseThrow(() -> new ApplicationException(
+                        String.format("Entry with %d not found", entryId),
+                        HttpStatus.NOT_FOUND));
+
+        if(!entry.getUser().equals(user)){
+            throw new ApplicationException(
+                    String.format("User with id %d is not authorized", user.getId()),
+                    HttpStatus.UNAUTHORIZED);
+        }
+    }
     
 }

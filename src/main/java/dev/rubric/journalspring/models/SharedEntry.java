@@ -3,7 +3,7 @@ package dev.rubric.journalspring.models;
 import jakarta.persistence.*;
 
 import java.time.ZonedDateTime;
-import java.util.UUID;
+import java.util.*;
 
 @Entity
 @Table(name = "shared_entries")
@@ -21,10 +21,26 @@ public class SharedEntry {
     @Column(name = "expiry_time", nullable = false)
     private ZonedDateTime expiryTime;
 
-    public SharedEntry(Entry entry, ZonedDateTime expiryTime) {
+    @ManyToMany
+    @JoinTable(
+            name = "allowed_users",
+            joinColumns = @JoinColumn(name = "shared_entry_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private List<User> allowedUsers = new ArrayList<>();
+
+    @Column(name = "allow_anyone", nullable = false)
+    private boolean allowAnyone;
+
+    public SharedEntry(Entry entry,
+                       ZonedDateTime expiryTime,
+                       List<User> allowedUsers,
+                       boolean allowAnyone) {
         this.publicId = UUID.randomUUID();
         this.entry = entry;
         this.expiryTime = expiryTime;
+        this.allowedUsers = allowedUsers;
+        this.allowAnyone = allowAnyone;
     }
 
     public SharedEntry() {}
@@ -59,5 +75,21 @@ public class SharedEntry {
 
     public void setExpiryTime(ZonedDateTime expiryTime) {
         this.expiryTime = expiryTime;
+    }
+
+    public List<User> getAllowedUsers() {
+        return allowedUsers;
+    }
+
+    public void setAllowedUsers(List<User> allowedUsers) {
+        this.allowedUsers = allowedUsers;
+    }
+
+    public void addToAllowedUsers(User user) {
+        this.allowedUsers.add(user);
+    }
+
+    public boolean removeFromAllowedUsers(User user) {
+        return this.allowedUsers.remove(user);
     }
 }

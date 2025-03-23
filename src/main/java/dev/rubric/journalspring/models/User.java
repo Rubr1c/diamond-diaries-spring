@@ -42,6 +42,9 @@ public class User implements UserDetails {
     @Column(name = "is_activated")
     private Boolean isActivated = false;
 
+    @Column(name = "2fa_enabled")
+    private Boolean enabled2fa = false;
+
     @Column(name = "last_login")
     private ZonedDateTime lastLogin;
 
@@ -53,10 +56,10 @@ public class User implements UserDetails {
     private String profilePicture = "";
 
     public User(String googleId,
-            String username,
-            String email,
-            String password,
-            String profilePicture) {
+                String username,
+                String email,
+                String password,
+                String profilePicture) {
         this.googleId = googleId;
         this.username = username;
         this.email = email;
@@ -154,8 +157,8 @@ public class User implements UserDetails {
         this.verificationCode = verificationCode;
     }
 
-    public Optional<Boolean> isActivated() {
-        return Optional.ofNullable(isActivated);
+    public Boolean isActivated() {
+        return isActivated;
     }
 
     public void setActivated(boolean activated) {
@@ -188,5 +191,13 @@ public class User implements UserDetails {
 
     public void setCodeExp(LocalDateTime codeExp) {
         this.codeExp = codeExp;
+    }
+
+    public Boolean isEnabled2fa() {
+        return enabled2fa != null && enabled2fa;
+    }
+
+    public void setEnabled2fa(Boolean enabled2fa) {
+        this.enabled2fa = enabled2fa;
     }
 }
