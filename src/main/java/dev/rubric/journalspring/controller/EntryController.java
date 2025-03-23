@@ -45,7 +45,7 @@
             User user = getAuthenticatedUser();
             logger.info("User {} is requesting entry with ID: {}", user.getId(), id);
 
-            EntryResponse entryResponse = entryService.getEntryById(user, id);
+            EntryResponse entryResponse = entryService.getEntryResponseById(user, id);
             return ResponseEntity.ok(entryResponse);
         }
 

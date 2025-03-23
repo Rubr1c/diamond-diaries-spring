@@ -51,7 +51,7 @@ public class EntryService {
         return new EntryResponse(entry);
     }
 
-    public EntryResponse getEntryById(User user, Long entryId) {
+    public EntryResponse getEntryResponseById(User user, Long entryId) {
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(
                         String.format("Entry with %d not found", entryId),
@@ -69,6 +69,21 @@ public class EntryService {
         logger.debug("Content decrypted for entry id: {}", entryId);
 
         return new EntryResponse(entry);
+    }
+
+    public Entry getEntryById(User user, Long entryId) {
+        Entry entry = entryRepository.findById(entryId)
+                .orElseThrow(() -> new ApplicationException(
+                        String.format("Entry with %d not found", entryId),
+                        HttpStatus.NOT_FOUND));
+
+        if(!entry.getUser().equals(user)){
+            throw new ApplicationException(
+                    String.format("User with id %d is not authorized", user.getId()),
+                    HttpStatus.UNAUTHORIZED);
+        }
+
+        return entry;
     }
 
     public List<EntryResponse> getAllUserEntries(User user){
