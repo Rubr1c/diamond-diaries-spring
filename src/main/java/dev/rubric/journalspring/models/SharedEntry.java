@@ -84,4 +84,12 @@ public class SharedEntry {
     public void setAllowedUsers(List<User> allowedUsers) {
         this.allowedUsers = allowedUsers;
     }
+
+    public void addToAllowedUsers(User user) {
+        this.allowedUsers.add(user);
+    }
+
+    public boolean removeFromAllowedUsers(User user) {
+        return this.allowedUsers.remove(user);
+    }
 }
