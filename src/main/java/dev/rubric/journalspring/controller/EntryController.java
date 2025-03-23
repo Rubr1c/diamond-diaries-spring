@@ -1,6 +1,7 @@
     package dev.rubric.journalspring.controller;
 
     import dev.rubric.journalspring.dto.EntryDto;
+    import dev.rubric.journalspring.models.Entry;
     import dev.rubric.journalspring.models.User;
     import dev.rubric.journalspring.response.EntryResponse;
     import dev.rubric.journalspring.service.EntryService;
@@ -14,6 +15,7 @@
     import org.springframework.web.bind.annotation.*;
 
     import java.util.List;
+    import java.util.stream.Collectors;
 
     @RestController
     @RequestMapping("/api/v1/entries")
@@ -45,7 +47,7 @@
             User user = getAuthenticatedUser();
             logger.info("User {} is requesting entry with ID: {}", user.getId(), id);
 
-            EntryResponse entryResponse = entryService.getEntryById(user, id);
+            EntryResponse entryResponse = new EntryResponse(entryService.getEntryById(user, id));
             return ResponseEntity.ok(entryResponse);
         }
 
@@ -54,7 +56,11 @@
             User user = getAuthenticatedUser();
             logger.info("User {} is requesting all journal entries", user.getId());
 
-            List<EntryResponse> entries = entryService.getAllUserEntries(user);
+            List<EntryResponse> entries = entryService.getAllUserEntries(user)
+                    .stream()
+                    .map(EntryResponse::new)
+                    .collect(Collectors.toList());
+
             return ResponseEntity.ok(entries);
         }
 
@@ -63,7 +69,7 @@
             User user = getAuthenticatedUser();
             logger.info("User '{}' is adding a new journal entry", user.getId());
 
-            EntryResponse entryResponse = entryService.addEntry(user, entryDto);
+            EntryResponse entryResponse = new EntryResponse(entryService.addEntry(user, entryDto));
             return ResponseEntity.status(HttpStatus.CREATED).body(entryResponse);
         }
 
@@ -72,7 +78,7 @@
             User user = getAuthenticatedUser();
             logger.info("User '{}' is updating a journal entry with id {}", user.getId(), entryId);
 
-            EntryResponse updateEntry = entryService.updateEntry(user, entryDto, entryId);
+            EntryResponse updateEntry =  new EntryResponse(entryService.updateEntry(user, entryDto, entryId));
             return ResponseEntity.ok(updateEntry);
         }
 
