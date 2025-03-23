@@ -1,5 +1,6 @@
     package dev.rubric.journalspring.controller;
 
+    import dev.rubric.journalspring.config.GetAuthenticatedUserUtility;
     import dev.rubric.journalspring.dto.EntryDto;
     import dev.rubric.journalspring.models.User;
     import dev.rubric.journalspring.response.EntryResponse;
@@ -9,8 +10,6 @@
     import org.slf4j.LoggerFactory;
     import org.springframework.http.HttpStatus;
     import org.springframework.http.ResponseEntity;
-    import org.springframework.security.core.Authentication;
-    import org.springframework.security.core.context.SecurityContextHolder;
     import org.springframework.web.bind.annotation.*;
 
     import java.util.List;
@@ -22,27 +21,19 @@
 
         private final EntryService entryService;
         private final UserService userService;
+        private final GetAuthenticatedUserUtility userUtility;
 
 
-        public EntryController(EntryService entryService, UserService userService) {
+        public EntryController(EntryService entryService, UserService userService, GetAuthenticatedUserUtility userUtility) {
             this.entryService = entryService;
             this.userService = userService;
+            this.userUtility = userUtility;
         }
 
-        private User getAuthenticatedUser() {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-            if (authentication == null || !authentication.isAuthenticated()) {
-                throw new SecurityException("User is not authenticated");
-            }
-
-            String username = authentication.getName();
-            return userService.findByUsername(username);
-        }
 
         @GetMapping("/{id}")
         public ResponseEntity<EntryResponse> getEntryById(@PathVariable Long id){
-            User user = getAuthenticatedUser();
+            User user = userUtility.getAuthenticatedUser();
             logger.info("User {} is requesting entry with ID: {}", user.getId(), id);
 
             EntryResponse entryResponse = entryService.getEntryById(user, id);
@@ -51,7 +42,7 @@
 
         @GetMapping
         public ResponseEntity<List<EntryResponse>> getAllUserEntries(){
-            User user = getAuthenticatedUser();
+            User user = userUtility.getAuthenticatedUser();
             logger.info("User {} is requesting all journal entries", user.getId());
 
             List<EntryResponse> entries = entryService.getAllUserEntries(user);
@@ -60,7 +51,7 @@
 
         @PostMapping("/add")
         public ResponseEntity<EntryResponse> addEntry(@RequestBody EntryDto entryDto){
-            User user = getAuthenticatedUser();
+            User user = userUtility.getAuthenticatedUser();
             logger.info("User '{}' is adding a new journal entry", user.getId());
 
             EntryResponse entryResponse = entryService.addEntry(user, entryDto);
@@ -69,7 +60,7 @@
 
         @PutMapping("/update/{entryId}")
         public ResponseEntity<EntryResponse> updateEntry(@RequestBody EntryDto entryDto, @PathVariable Long entryId){
-            User user = getAuthenticatedUser();
+            User user = userUtility.getAuthenticatedUser();
             logger.info("User '{}' is updating a journal entry with id {}", user.getId(), entryId);
 
             EntryResponse updateEntry = entryService.updateEntry(user, entryDto, entryId);
@@ -78,7 +69,7 @@
 
         @DeleteMapping("/delete/{entryId}")
         public ResponseEntity<Void> deleteEntry(@PathVariable long entryId){
-            User user = getAuthenticatedUser();
+            User user = userUtility.getAuthenticatedUser();
 
             logger.info("User {} is deleting journal entry with id {}", user.getId(),entryId);
             entryService.deleteEntry(user,entryId);
