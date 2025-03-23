@@ -7,11 +7,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
-public class GetAuthenticatedUserUtility {
+public class AuthUtil {
 
     private final UserService userService;
 
-    public GetAuthenticatedUserUtility(UserService userService) {
+    public AuthUtil(UserService userService) {
         this.userService = userService;
     }
 

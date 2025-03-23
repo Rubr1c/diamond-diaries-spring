@@ -1,6 +1,7 @@
 package dev.rubric.journalspring.controller;
 
 
+import dev.rubric.journalspring.config.AuthUtil;
 import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.User;
@@ -26,23 +27,14 @@ public class MediaController {
     private final MediaService mediaService;
     private final UserService userService;
     private final EntryService entryService;
+    private final AuthUtil authUtil;
 
 
-    public MediaController(MediaService mediaService, UserService userService, EntryService entryService) {
+    public MediaController(MediaService mediaService, UserService userService, EntryService entryService, AuthUtil authUtil) {
         this.mediaService = mediaService;
         this.userService = userService;
         this.entryService = entryService;
-    }
-
-    private User getAuthenticatedUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new SecurityException("User is not authenticated");
-        }
-
-        String username = authentication.getName();
-        return userService.findByUsername(username);
+        this.authUtil = authUtil;
     }
 
 
@@ -50,7 +42,7 @@ public class MediaController {
     public ResponseEntity<List<MediaResponse>> getAllMediaForEntry(@PathVariable long entryId) {
         logger.info("Received request for media of entry {}", entryId);
 
-        User user = getAuthenticatedUser();
+        User user = authUtil.getAuthenticatedUser();
 
         entryService.verifyUserOwnsEntry(user, entryId);
 
@@ -67,7 +59,7 @@ public class MediaController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("mediaType") MediaType mediaType) {
 
-        User user = getAuthenticatedUser();
+        User user = authUtil.getAuthenticatedUser();
         entryService.verifyUserOwnsEntry(user, entryId);
 
         if (file.isEmpty()) {
@@ -86,7 +78,7 @@ public class MediaController {
 
     @DeleteMapping("/delete/{mediaId}/entry/{entryId}")
     public ResponseEntity<?> deleteMedia(@PathVariable Long mediaId, @PathVariable Long entryId) {
-        User user = getAuthenticatedUser();
+        User user = authUtil.getAuthenticatedUser();
 
         try {
             // This will throw UNAUTHORIZED if the user doesn't own the entry
