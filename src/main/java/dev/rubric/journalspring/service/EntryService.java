@@ -147,17 +147,5 @@ public class EntryService {
         return entry;
     }
 
-    public void verifyUserOwnsEntry(User user, Long entryId){
-        Entry entry = entryRepository.findById(entryId)
-                .orElseThrow(() -> new ApplicationException(
-                        String.format("Entry with %d not found", entryId),
-                        HttpStatus.NOT_FOUND));
-
-        if(!entry.getUser().equals(user)){
-            throw new ApplicationException(
-                    String.format("User with id %d is not authorized", user.getId()),
-                    HttpStatus.UNAUTHORIZED);
-        }
-    }
     
 }
