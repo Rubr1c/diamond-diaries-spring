@@ -56,12 +56,12 @@
         }
 
         @PostMapping("/add")
-        public ResponseEntity<EntryResponse> addEntry(@RequestBody EntryDto entryDto){
+        public ResponseEntity<String> addEntry(@RequestBody EntryDto entryDto){
             User user = authUtil.getAuthenticatedUser();
             logger.info("User '{}' is adding a new journal entry", user.getId());
 
             EntryResponse entryResponse = new EntryResponse(entryService.addEntry(user, entryDto));
-            return ResponseEntity.status(HttpStatus.CREATED).body(entryResponse);
+            return ResponseEntity.status(HttpStatus.CREATED).body("Entry created successfully");
         }
 
         @PutMapping("/update/{entryId}")
