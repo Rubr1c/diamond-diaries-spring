@@ -48,12 +48,11 @@ public class SecurityConfig {
                     logger.info("Configuring authorization rules");
                     authorize
                             .requestMatchers(
-                                    "api/v1/auth/**",
+                                    "/api/v1/auth/**",
                                     "/oauth2/**",
                                     "/login/**",
                                     "/oauth2/authorization/**",
                                     "/oauth2/callback/**")
-
                             .permitAll()
                             .requestMatchers("/admin/**").permitAll()
                             .anyRequest().authenticated();
