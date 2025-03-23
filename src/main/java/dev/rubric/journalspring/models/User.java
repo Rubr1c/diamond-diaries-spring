@@ -157,8 +157,8 @@ public class User implements UserDetails {
         this.verificationCode = verificationCode;
     }
 
-    public Optional<Boolean> isActivated() {
-        return Optional.ofNullable(isActivated);
+    public Boolean isActivated() {
+        return isActivated;
     }
 
     public void setActivated(boolean activated) {

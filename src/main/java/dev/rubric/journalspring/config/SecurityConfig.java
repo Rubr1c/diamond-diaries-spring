@@ -48,7 +48,7 @@ public class SecurityConfig {
                     logger.info("Configuring authorization rules");
                     authorize
                             .requestMatchers(
-                                    "/auth/**",
+                                    "api/v1/auth/**",
                                     "/oauth2/**",
                                     "/login/**",
                                     "/oauth2/authorization/**",

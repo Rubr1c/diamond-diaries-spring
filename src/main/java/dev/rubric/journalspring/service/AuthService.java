@@ -178,7 +178,7 @@ public class AuthService {
                 .orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
 
         if (!user.isEnabled()) {
-            throw new ApplicationException("Account not verified. Please verify your account.", HttpStatus.FORBIDDEN);
+            throw new ApplicationException("Account not verified. Please verify your account.", HttpStatus.ACCEPTED);
         }
 
         try {
