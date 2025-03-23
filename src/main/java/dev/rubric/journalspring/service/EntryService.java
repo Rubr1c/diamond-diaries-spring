@@ -3,23 +3,23 @@ package dev.rubric.journalspring.service;
 import dev.rubric.journalspring.dto.EntryDto;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.Entry;
-import dev.rubric.journalspring.models.Media;
 import dev.rubric.journalspring.models.Tag;
 import dev.rubric.journalspring.models.User;
 import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.MediaRepository;
-import dev.rubric.journalspring.response.EntryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class EntryService {
@@ -135,6 +135,30 @@ public class EntryService {
     }
 
     //TODO: Fetch entries by Date e.g: Entries created in the past month
+
+    public List<Entry> getEntriesByYearAndMonth(User user, LocalDate date) {
+        if (date.isAfter(LocalDate.now())) {
+            throw new ApplicationException("Date cannot be in the future", HttpStatus.BAD_REQUEST);
+        }
+
+        ZoneId zoneId = ZoneId.systemDefault();
+
+        LocalDate endOfMonthDate = YearMonth.of(date.getYear(), date.getMonth()).atEndOfMonth();
+
+        ZonedDateTime startDate = date.atStartOfDay(zoneId);
+        ZonedDateTime endDate = endOfMonthDate.atTime(23, 59, 59).atZone(zoneId);
+
+        List<Entry> entries = entryRepository.findByDateCreatedBetweenAndUser(startDate, endDate, user);
+
+        if (entries == null || entries.isEmpty()) {
+            throw new ApplicationException(
+                    String.format("No entries found for %d-%02d", date.getYear(), date.getMonthValue()),
+                    HttpStatus.NOT_FOUND);
+        }
+
+        return entries;
+    }
+
 
     public Entry addTags(User user, Long entryId,Set<Tag> tags){
         Entry entry = entryRepository.findById(entryId)
