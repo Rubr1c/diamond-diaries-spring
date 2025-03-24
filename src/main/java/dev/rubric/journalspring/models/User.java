@@ -55,6 +55,12 @@ public class User implements UserDetails {
     @Column(name = "profile_picture")
     private String profilePicture = "";
 
+    @Column(name = "ai_allow_title_access")
+    private boolean aiAllowTitleAccess = false;
+    @Column(name = "ai_allow_content_access")
+    private boolean aiAllowContentAccess = false;
+
+
     public User(String googleId,
                 String username,
                 String email,
@@ -199,5 +205,21 @@ public class User implements UserDetails {
 
     public void setEnabled2fa(Boolean enabled2fa) {
         this.enabled2fa = enabled2fa;
+    }
+
+    public boolean isAiAllowTitleAccess() {
+        return aiAllowTitleAccess;
+    }
+
+    public void setAiAllowTitleAccess(boolean aiAllowTitleAccess) {
+        this.aiAllowTitleAccess = aiAllowTitleAccess;
+    }
+
+    public boolean isAiAllowContentAccess() {
+        return aiAllowContentAccess;
+    }
+
+    public void setAiAllowContentAccess(boolean aiAllowContentAccess) {
+        this.aiAllowContentAccess = aiAllowContentAccess;
     }
 }
