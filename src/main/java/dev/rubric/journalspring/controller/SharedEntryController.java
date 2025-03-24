@@ -20,12 +20,10 @@ import java.util.UUID;
 @RequestMapping("/api/v1/shared-entry")
 public class SharedEntryController {
 
-    private final UserService userService;
     private final SharedEntryService sharedEntryService;
     private final AuthUtil authUtil;
 
     public SharedEntryController(UserService userService, SharedEntryService sharedEntryService, AuthUtil authUtil) {
-        this.userService = userService;
         this.sharedEntryService = sharedEntryService;
         this.authUtil = authUtil;
     }
