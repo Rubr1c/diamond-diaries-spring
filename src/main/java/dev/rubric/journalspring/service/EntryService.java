@@ -9,6 +9,8 @@ import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.MediaRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,6 +90,11 @@ public class EntryService {
         logger.debug("Decrypted content for {} entries", entries.size());
         
         return new ArrayList<>(entries);
+    }
+
+    public List<Entry> getUserEntries(User user, int offset, int count) {
+        PageRequest pageRequest = PageRequest.of(offset, count, Sort.by(Sort.Direction.DESC, "journalDate"));
+        return entryRepository.findAllByUserOrderByJournalDateDesc(user, pageRequest).getContent();
     }
 
     public void deleteEntry(User user, Long entryId){
