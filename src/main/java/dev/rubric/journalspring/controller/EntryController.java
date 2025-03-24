@@ -12,6 +12,7 @@
     import org.springframework.http.ResponseEntity;
     import org.springframework.web.bind.annotation.*;
 
+    import java.time.LocalDate;
     import java.util.List;
     import java.util.stream.Collectors;
 
@@ -40,6 +41,19 @@
 
             EntryResponse entryResponse = new EntryResponse(entryService.getEntryById(user, id));
             return ResponseEntity.ok(entryResponse);
+        }
+
+        @GetMapping("/date/{date}")
+        public ResponseEntity<List<EntryResponse>> getEntriesByDate(@PathVariable LocalDate date){
+            User user = userUtility.getAuthenticatedUser();
+            logger.info("User {} is requesting entries for date: {}", user.getId(), date);
+
+            List<EntryResponse> entryResponses = entryService.getEntriesByYearAndMonth(user, date)
+                    .stream()
+                    .map(EntryResponse::new)
+                    .toList();
+
+            return ResponseEntity.ok(entryResponses);
         }
 
         @GetMapping
