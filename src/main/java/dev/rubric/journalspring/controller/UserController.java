@@ -61,12 +61,36 @@ public class UserController {
         if (profilePicture.isEmpty()) {
             return ResponseEntity.badRequest().body("File must not be empty");
         }
+
+        if (user.getProfilePicture() != null && !user.getProfilePicture().isEmpty()) {
+            throw new ApplicationException("Profile picture already exists", HttpStatus.BAD_REQUEST);
+        }
+
         try {
             String fileUrl = userService.uploadProfilePicture(user, profilePicture);
             return ResponseEntity.status(HttpStatus.CREATED).body("Profile picture uploaded successfully: " + fileUrl);
         } catch (Exception e) {
             logger.error("Error uploading file: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload profile picture");
+        }
+    }
+
+    @DeleteMapping
+    public ResponseEntity<String> deleteProfilePicture(){
+        User user = authUtil.getAuthenticatedUser();
+
+        if(user.getProfilePicture() != null){
+            try{
+                userService.deleteProfilePicture(user);
+                return ResponseEntity.noContent().build();
+            }
+            catch (S3Exception e){
+                logger.error("Error deleting profile picture: {}", e.getMessage());
+                throw new ApplicationException("Failed to delete profile picture", HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }
+        else{
+            return ResponseEntity.noContent().build();
         }
     }
 

@@ -56,6 +56,8 @@ public class UserService {
         if(user.getProfilePicture() != null){
             try{
                 s3Service.deleteFile(user.getProfilePicture());
+                user.setProfilePicture(null);
+                userRepository.save(user);
             }
             catch (S3Exception e){
                 logger.error("Error deleting profile picture: {}", e.getMessage());

@@ -179,6 +179,9 @@ public class EntryService {
         // Upload file to S3 with private access
         String s3Key = s3Service.uploadFile(file, mediaType);
 
+        //Store the permanent URL in the database
+        String s3Url = "https://diamond-diaries-media.s3.amazonaws.com/" + s3Key;
+
         // Generate the presigned URL
         String presignedUrl = s3Service.generatePresignedUrl(s3Key);
 
@@ -187,7 +190,7 @@ public class EntryService {
         media.setEntry(entry);
         media.setMediaType(mediaType);
         media.setS3Key(s3Key);
-        media.setUrl(presignedUrl);  // Ensure url is not null
+        media.setUrl(s3Url);
         mediaRepository.save(media);
 
         return presignedUrl;

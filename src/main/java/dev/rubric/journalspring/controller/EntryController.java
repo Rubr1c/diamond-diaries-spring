@@ -36,6 +36,7 @@
         }
 
 
+        /*
         @GetMapping("/{id}")
         public ResponseEntity<EntryResponse> getEntryById(@PathVariable Long id){
             User user = authUtil.getAuthenticatedUser();
@@ -45,6 +46,7 @@
             EntryResponse entryResponse = new EntryResponse(entryService.getEntryById(user, id));
             return ResponseEntity.ok(entryResponse);
         }
+         */
 
         @GetMapping
         public ResponseEntity<List<EntryResponse>> getAllUserEntries(){
