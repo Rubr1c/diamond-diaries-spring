@@ -23,7 +23,6 @@ public class AdminController {
     @GetMapping("/users")
     public ResponseEntity<List<UserResponse>> getAllUsers(
             @RequestHeader("Authorization") String authHeader) {
-        // Check if it's a Bearer token and validate it
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return ResponseEntity.status(401).build(); // Unauthorized
         }

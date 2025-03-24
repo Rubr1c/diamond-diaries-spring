@@ -19,19 +19,19 @@
     import java.util.List;
     import java.util.stream.Collectors;
 
+    import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
+
     @RestController
-    @RequestMapping("/api/v1/entries")
+    @RequestMapping("/api/v1/entry")
     public class EntryController {
         private static final Logger logger = LoggerFactory.getLogger(EntryController.class);
 
         private final EntryService entryService;
-        private final UserService userService;
         private final AuthUtil authUtil;
 
 
         public EntryController(EntryService entryService, UserService userService, AuthUtil authUtil) {
             this.entryService = entryService;
-            this.userService = userService;
             this.authUtil = authUtil;
         }
 
@@ -59,30 +59,30 @@
             return ResponseEntity.ok(entries);
         }
 
-        @PostMapping("/add")
+        @PostMapping("/new")
         public ResponseEntity<String> addEntry(@RequestBody EntryDto entryDto){
             User user = authUtil.getAuthenticatedUser();
             logger.info("User '{}' is adding a new journal entry", user.getId());
 
-            EntryResponse entryResponse = new EntryResponse(entryService.addEntry(user, entryDto));
+            entryService.addEntry(user, entryDto);
             return ResponseEntity.status(HttpStatus.CREATED).body("Entry created successfully");
         }
 
-        @PutMapping("/update/{entryId}")
-        public ResponseEntity<EntryResponse> updateEntry(@RequestBody EntryDto entryDto, @PathVariable Long entryId){
+        @PutMapping("/{id}/update")
+        public ResponseEntity<EntryResponse> updateEntry(@RequestBody EntryDto entryDto, @PathVariable Long id){
             User user = authUtil.getAuthenticatedUser();
-            logger.info("User '{}' is updating a journal entry with id {}", user.getId(), entryId);
+            logger.info("User '{}' is updating a journal entry with id {}", user.getId(), id);
 
-            EntryResponse updateEntry =  new EntryResponse(entryService.updateEntry(user, entryDto, entryId));
+            EntryResponse updateEntry =  new EntryResponse(entryService.updateEntry(user, entryDto, id));
             return ResponseEntity.ok(updateEntry);
         }
 
-        @DeleteMapping("/delete/{entryId}")
-        public ResponseEntity<Void> deleteEntry(@PathVariable long entryId){
+        @DeleteMapping("/{id}")
+        public ResponseEntity<Void> deleteEntry(@PathVariable Long id){
             User user = authUtil.getAuthenticatedUser();
 
-            logger.info("User {} is deleting journal entry with id {}", user.getId(),entryId);
-            entryService.deleteEntry(user,entryId);
+            logger.info("User {} is deleting journal entry with id {}", user.getId(), id);
+            entryService.deleteEntry(user, id);
             return ResponseEntity.noContent().build();
         }
 
@@ -112,36 +112,35 @@
             return ResponseEntity.ok(entries);
         }
       
-        @GetMapping("/{entryId}")
-        public ResponseEntity<List<MediaResponse>> getAllMediaForEntry(@PathVariable long entryId) {
-            logger.info("Received request for media of entry {}", entryId);
+        @GetMapping("/{id}/media")
+        public ResponseEntity<List<MediaResponse>> getAllMediaForEntry(@PathVariable Long id) {
+            logger.info("Received request for media of entry {}", id);
 
             User user = authUtil.getAuthenticatedUser();
 
-            entryService.verifyUserOwnsEntry(user, entryId);
+            entryService.verifyUserOwnsEntry(user, id);
 
-            logger.info("User {} is fetching all media for journal entry with id {}", user.getId(), entryId);
+            logger.info("User {} is fetching all media for journal entry with id {}", user.getId(), id);
 
-            List<MediaResponse> mediaResponses = entryService.getMediaByEntryId(entryId);
+            List<MediaResponse> mediaResponses = entryService.getMediaByEntryId(id);
 
             return ResponseEntity.ok(mediaResponses);
         }
 
-        @PostMapping(value = "/upload", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
-        public ResponseEntity<String> uploadMediaToEntry(
-                @RequestParam("entryId") Long entryId,
-                @RequestParam("file") MultipartFile file,
-                @RequestParam("mediaType") MediaType mediaType) {
+        @PostMapping(value = "/{id}/media/new", consumes = MULTIPART_FORM_DATA_VALUE)
+        public ResponseEntity<String> uploadMediaToEntry(@PathVariable Long id,
+                                                         @RequestParam("mediaType") MediaType mediaType,
+                                                         @RequestParam("file") MultipartFile file) {
 
             User user = authUtil.getAuthenticatedUser();
-            entryService.verifyUserOwnsEntry(user, entryId);
+            entryService.verifyUserOwnsEntry(user, id);
 
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body("File must not be empty");
             }
 
             try {
-                String fileUrl = entryService.uploadMedia(entryId, file, mediaType);
+                String fileUrl = entryService.uploadMedia(id, file, mediaType);
                 return ResponseEntity.status(HttpStatus.CREATED).body("File uploaded successfully: " + fileUrl);
             } catch (Exception e) {
                 logger.error("Error uploading file: {}", e.getMessage());
@@ -150,14 +149,13 @@
         }
 
 
-        @DeleteMapping("/delete/{mediaId}/entry/{entryId}")
-        public ResponseEntity<String> deleteMediaForEntry(@PathVariable Long mediaId, @PathVariable Long entryId) {
+        @DeleteMapping("/{id}/media/{mediaId}")
+        public ResponseEntity<String> deleteMediaForEntry(@PathVariable Long id, @PathVariable Long mediaId) {
             User user = authUtil.getAuthenticatedUser();
 
             try {
-                // This will throw UNAUTHORIZED if the user doesn't own the entry
-                entryService.verifyUserOwnsEntry(user, entryId);
-                entryService.deleteMedia(mediaId, entryId);
+                entryService.verifyUserOwnsEntry(user, id);
+                entryService.deleteMedia(mediaId, id);
                 return ResponseEntity.ok("Media deleted successfully");
             } catch (ApplicationException e) {
                 logger.error("Error deleting media: {}", e.getMessage());

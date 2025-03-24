@@ -4,6 +4,7 @@ import dev.rubric.journalspring.config.AuthUtil;
 import dev.rubric.journalspring.models.Folder;
 import dev.rubric.journalspring.response.FolderResponse;
 import dev.rubric.journalspring.service.FolderService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +26,7 @@ public class FolderController {
     public ResponseEntity<String> createFolder(@PathVariable String name) {
         folderService.createFolder(authUtil.getAuthenticatedUser(), name);
 
-        return ResponseEntity.ok("Created folder");
+        return ResponseEntity.status(HttpStatus.CREATED).body("Created folder");
     }
 
     @GetMapping("/{id}")
@@ -35,7 +36,7 @@ public class FolderController {
         return ResponseEntity.ok(new FolderResponse(folder));
     }
 
-    @GetMapping("/all")
+    @GetMapping
     public ResponseEntity<List<FolderResponse>> getAllFolders() {
         List<Folder> folders = folderService.getAllUserFolders(authUtil.getAuthenticatedUser());
 
