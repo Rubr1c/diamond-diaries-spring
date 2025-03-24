@@ -4,10 +4,7 @@ import dev.rubric.journalspring.config.S3Service;
 import dev.rubric.journalspring.dto.EntryDto;
 import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
-import dev.rubric.journalspring.models.Entry;
-import dev.rubric.journalspring.models.Media;
-import dev.rubric.journalspring.models.Tag;
-import dev.rubric.journalspring.models.User;
+import dev.rubric.journalspring.models.*;
 import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.MediaRepository;
 import dev.rubric.journalspring.response.EntryResponse;
@@ -32,14 +29,17 @@ public class EntryService {
     private final EntryRepository entryRepository;
     private final EncryptionService encryptionService;
     private final MediaRepository mediaRepository;
+    private final FolderService folderService;
     private final S3Service s3Service;
 
     @Autowired
-    public EntryService(EntryRepository entryRepository, EncryptionService encryptionService, MediaRepository mediaRepository, S3Service s3Service) {
+    public EntryService(EntryRepository entryRepository, EncryptionService encryptionService, MediaRepository mediaRepository, FolderService folderService, S3Service s3Service) {
         this.entryRepository = entryRepository;
         this.encryptionService = encryptionService;
         this.mediaRepository = mediaRepository;
         this.s3Service = s3Service;
+        this.folderService = folderService
+
     }
 
     public Entry addEntry(User user, EntryDto details) {
@@ -161,7 +161,7 @@ public class EntryService {
 
 
     //Fetching Entry
-    public void verifyUserOwnsEntry(User user, Long entryId){
+    public Entry verifyUserOwnsEntry(User user, Long entryId){
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(
                         String.format("Entry with %d not found", entryId),
@@ -172,6 +172,28 @@ public class EntryService {
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
         }
+        return entry;
+    }
+
+    public void addEntryToFolder(User user, Long entryId, Long folderId) {
+        Entry entry = verifyUserOwnsEntry(user, entryId);
+        Folder folder = folderService.getFolder(user, folderId);
+
+        entry.setFolder(folder);
+        entryRepository.save(entry);
+    }
+
+    public void removeEntryFromFolder(User user,
+                                      Long entryId) {
+        Entry entry = verifyUserOwnsEntry(user, entryId);
+        entry.setFolder(null);
+        entryRepository.save(entry);
+    }
+
+    public List<Entry> getAllEntriesFromFolder(User user, Long folderId) {
+        Folder folder = folderService.getFolder(user, folderId);
+
+        return entryRepository.findAllByFolder(folder);
     }
 
     public String uploadMedia(Long entryId, MultipartFile file, MediaType mediaType) {

@@ -86,6 +86,32 @@
             return ResponseEntity.noContent().build();
         }
 
+        @PostMapping("/{id}/add-to-folder/{folderId}")
+        public ResponseEntity<String> addToFolder(@PathVariable Long id,
+                                                  @PathVariable Long folderId) {
+            entryService.addEntryToFolder(authUtil.getAuthenticatedUser(), id, folderId);
+
+            return ResponseEntity.ok("Added entry to folder");
+        }
+
+        @DeleteMapping("/{id}/remove-from-folder")
+        public ResponseEntity<String> removeFromFolder(@PathVariable Long id) {
+            entryService.removeEntryFromFolder(authUtil.getAuthenticatedUser(), id);
+
+            return ResponseEntity.ok("Removed entry to folder");
+        }
+
+        @GetMapping("/folder/{folderId}")
+        public ResponseEntity<List<EntryResponse>> getAllFromFolder(@PathVariable Long folderId) {
+            List<EntryResponse> entries = entryService
+                    .getAllEntriesFromFolder(authUtil.getAuthenticatedUser(), folderId)
+                    .stream()
+                    .map(EntryResponse::new)
+                    .toList();
+
+            return ResponseEntity.ok(entries);
+        }
+      
         @GetMapping("/{entryId}")
         public ResponseEntity<List<MediaResponse>> getAllMediaForEntry(@PathVariable long entryId) {
             logger.info("Received request for media of entry {}", entryId);
@@ -141,6 +167,5 @@
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete media");
             }
         }
-
 
     }
