@@ -41,6 +41,7 @@ public class UserService {
             String uploadedUrl = s3Service.uploadProfilePicture(profilePicture);
 
             user.setProfilePicture(uploadedUrl);
+            userRepository.save(user);
 
             logger.info("Successfully uploaded profile picture: Name='{}', Size={} bytes",
                     profilePicture.getOriginalFilename(),
