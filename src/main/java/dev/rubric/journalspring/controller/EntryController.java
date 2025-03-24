@@ -2,8 +2,11 @@
 
     import dev.rubric.journalspring.config.AuthUtil;
     import dev.rubric.journalspring.dto.EntryDto;
+    import dev.rubric.journalspring.enums.MediaType;
+    import dev.rubric.journalspring.exception.ApplicationException;
     import dev.rubric.journalspring.models.User;
     import dev.rubric.journalspring.response.EntryResponse;
+    import dev.rubric.journalspring.response.MediaResponse;
     import dev.rubric.journalspring.service.EntryService;
     import dev.rubric.journalspring.service.UserService;
     import org.slf4j.Logger;
@@ -11,6 +14,7 @@
     import org.springframework.http.HttpStatus;
     import org.springframework.http.ResponseEntity;
     import org.springframework.web.bind.annotation.*;
+    import org.springframework.web.multipart.MultipartFile;
 
     import java.util.List;
     import java.util.stream.Collectors;
@@ -56,12 +60,12 @@
         }
 
         @PostMapping("/add")
-        public ResponseEntity<EntryResponse> addEntry(@RequestBody EntryDto entryDto){
+        public ResponseEntity<String> addEntry(@RequestBody EntryDto entryDto){
             User user = authUtil.getAuthenticatedUser();
             logger.info("User '{}' is adding a new journal entry", user.getId());
 
             EntryResponse entryResponse = new EntryResponse(entryService.addEntry(user, entryDto));
-            return ResponseEntity.status(HttpStatus.CREATED).body(entryResponse);
+            return ResponseEntity.status(HttpStatus.CREATED).body("Entry created successfully");
         }
 
         @PutMapping("/update/{entryId}")
@@ -106,6 +110,62 @@
                     .toList();
 
             return ResponseEntity.ok(entries);
+        }
+      
+        @GetMapping("/{entryId}")
+        public ResponseEntity<List<MediaResponse>> getAllMediaForEntry(@PathVariable long entryId) {
+            logger.info("Received request for media of entry {}", entryId);
+
+            User user = authUtil.getAuthenticatedUser();
+
+            entryService.verifyUserOwnsEntry(user, entryId);
+
+            logger.info("User {} is fetching all media for journal entry with id {}", user.getId(), entryId);
+
+            List<MediaResponse> mediaResponses = entryService.getMediaByEntryId(entryId);
+
+            return ResponseEntity.ok(mediaResponses);
+        }
+
+        @PostMapping(value = "/upload", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+        public ResponseEntity<String> uploadMediaToEntry(
+                @RequestParam("entryId") Long entryId,
+                @RequestParam("file") MultipartFile file,
+                @RequestParam("mediaType") MediaType mediaType) {
+
+            User user = authUtil.getAuthenticatedUser();
+            entryService.verifyUserOwnsEntry(user, entryId);
+
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest().body("File must not be empty");
+            }
+
+            try {
+                String fileUrl = entryService.uploadMedia(entryId, file, mediaType);
+                return ResponseEntity.status(HttpStatus.CREATED).body("File uploaded successfully: " + fileUrl);
+            } catch (Exception e) {
+                logger.error("Error uploading file: {}", e.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload file");
+            }
+        }
+
+
+        @DeleteMapping("/delete/{mediaId}/entry/{entryId}")
+        public ResponseEntity<String> deleteMediaForEntry(@PathVariable Long mediaId, @PathVariable Long entryId) {
+            User user = authUtil.getAuthenticatedUser();
+
+            try {
+                // This will throw UNAUTHORIZED if the user doesn't own the entry
+                entryService.verifyUserOwnsEntry(user, entryId);
+                entryService.deleteMedia(mediaId, entryId);
+                return ResponseEntity.ok("Media deleted successfully");
+            } catch (ApplicationException e) {
+                logger.error("Error deleting media: {}", e.getMessage());
+                return ResponseEntity.status(e.getStatus()).body(e.getMessage());
+            } catch (Exception e) {
+                logger.error("Unexpected error deleting media with id: {}", mediaId);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete media");
+            }
         }
 
     }
