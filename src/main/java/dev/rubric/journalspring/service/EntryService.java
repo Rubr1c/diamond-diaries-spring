@@ -173,45 +173,54 @@ public class EntryService {
         }
     }
 
-    public String uploadMedia(Long entryId, MultipartFile file, MediaType mediaType) {
-        Optional<Entry> entryOptional = entryRepository.findById(entryId);
-        if (entryOptional.isEmpty()) {
-            throw new ApplicationException("Entry not found", HttpStatus.NOT_FOUND);
-        }
+    public String uploadMedia(User user, Long entryId, MultipartFile file, MediaType mediaType) {
+        Entry entry = getEntryById(user, entryId);
 
-        Entry entry = entryOptional.get();
+        // Upload file to S3 with private access
+        String s3Key = s3Service.uploadFile(file, mediaType);
 
-        try {
-            String fileUrl = s3Service.uploadFile(file, mediaType, false);
-            Media media = new Media(entry, fileUrl, mediaType);
-            mediaRepository.save(media);
+        // Generate the presigned URL
+        String presignedUrl = s3Service.generatePresignedUrl(s3Key);
 
-            logger.info("Uploaded media: {} ({} bytes) under type {}", file.getOriginalFilename(), file.getSize(), mediaType);
-            return fileUrl;
-        } catch (Exception e) {
-            logger.error("Error uploading media: {}", e.getMessage());
-            throw new ApplicationException("Failed to upload file", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        // Save media record with S3 key and URL
+        Media media = new Media();
+        media.setEntry(entry);
+        media.setMediaType(mediaType);
+        media.setS3Key(s3Key);
+        media.setUrl(presignedUrl);  // Ensure url is not null
+        mediaRepository.save(media);
+
+        return presignedUrl;
     }
 
+    // Get all media for an entry with secure URLs
+    public List<MediaResponse> getMediaByEntryId(Long entryId) {
+        List<Media> mediaList = mediaRepository.findAllByEntryId(entryId);
+
+        return mediaList.stream()
+                .map(media -> {
+                    // Generate a fresh pre-signed URL for each media item
+                    String presignedUrl = s3Service.generatePresignedUrl(media.getS3Key());
+                    return new MediaResponse(media, presignedUrl);
+                })
+                .collect(Collectors.toList());
+    }
+
+    // Delete media securely
     public void deleteMedia(Long mediaId, Long entryId) {
         Media media = mediaRepository.findById(mediaId)
                 .orElseThrow(() -> new ApplicationException("Media not found", HttpStatus.NOT_FOUND));
 
+        // Verify the media belongs to the specified entry
         if (!media.getEntry().getId().equals(entryId)) {
             throw new ApplicationException("Media does not belong to the specified entry", HttpStatus.BAD_REQUEST);
         }
 
-        s3Service.deleteFile(media.getUrl());
+        // Delete from S3 using the S3 key
+        s3Service.deleteFile(media.getS3Key());
 
+        // Remove from database
         mediaRepository.delete(media);
-    }
-
-    public List<MediaResponse> getMediaByEntryId(Long entryId) {
-        List<Media> mediaList = mediaRepository.findByEntryId(entryId);
-        return mediaList.stream()
-                .map(MediaResponse::new)
-                .toList();
     }
     
 }

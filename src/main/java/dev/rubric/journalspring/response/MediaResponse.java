@@ -13,11 +13,14 @@ public class MediaResponse {
     private MediaType type;
     @JsonProperty
     private Long entryId;
+    @JsonProperty
+    private String presignedUrl;
 
-    public MediaResponse(Media media) {
+    public MediaResponse(Media media, String presignedUrl) {
         if (media == null) {
             throw new IllegalArgumentException("Media cannot be null");
         }
+        this.presignedUrl = presignedUrl;
         this.id = media.getId();
         this.url = media.getUrl();
         this.type = media.getType();
@@ -28,4 +31,7 @@ public class MediaResponse {
     public String getUrl() { return url; }
     public MediaType getType() { return type; }
     public Long getEntryId() { return entryId; }
+    public String getPresignedUrl() {
+        return presignedUrl;
+    }
 }
