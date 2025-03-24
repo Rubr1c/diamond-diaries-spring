@@ -45,7 +45,7 @@
 
         @GetMapping("/date/{date}")
         public ResponseEntity<List<EntryResponse>> getEntriesByDate(@PathVariable LocalDate date){
-            User user = userUtility.getAuthenticatedUser();
+            User user = authUtil.getAuthenticatedUser();
             logger.info("User {} is requesting entries for date: {}", user.getId(), date);
 
             List<EntryResponse> entryResponses = entryService.getEntriesByYearAndMonth(user, date)
