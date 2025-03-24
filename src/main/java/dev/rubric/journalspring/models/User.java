@@ -55,10 +55,12 @@ public class User implements UserDetails {
     @Column(name = "profile_picture")
     private String profilePicture = "";
 
-    @Column(name = "ai_allow_title_access")
+    @Column(name = "ai_allow_title_access", nullable = false)
     private boolean aiAllowTitleAccess = false;
-    @Column(name = "ai_allow_content_access")
+    @Column(name = "ai_allow_content_access", nullable = false)
     private boolean aiAllowContentAccess = false;
+    @Column(name = "ai_cooldown")
+    private LocalDateTime aiCooldown;
 
 
     public User(String googleId,
@@ -221,5 +223,13 @@ public class User implements UserDetails {
 
     public void setAiAllowContentAccess(boolean aiAllowContentAccess) {
         this.aiAllowContentAccess = aiAllowContentAccess;
+    }
+
+    public LocalDateTime getAiCooldown() {
+        return aiCooldown;
+    }
+
+    public void setAiCooldown(LocalDateTime aiCooldown) {
+        this.aiCooldown = aiCooldown;
     }
 }
