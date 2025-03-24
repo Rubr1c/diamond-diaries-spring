@@ -38,8 +38,7 @@ public class EntryService {
         this.encryptionService = encryptionService;
         this.mediaRepository = mediaRepository;
         this.s3Service = s3Service;
-        this.folderService = folderService
-
+        this.folderService = folderService;
     }
 
     public Entry addEntry(User user, EntryDto details) {
