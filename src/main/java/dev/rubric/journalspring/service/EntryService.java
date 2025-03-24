@@ -94,7 +94,17 @@ public class EntryService {
 
     public List<Entry> getUserEntries(User user, int offset, int count) {
         PageRequest pageRequest = PageRequest.of(offset, count, Sort.by(Sort.Direction.DESC, "journalDate"));
-        return entryRepository.findAllByUserOrderByJournalDateDesc(user, pageRequest).getContent();
+        List<Entry> entries = entryRepository.findAllByUserOrderByJournalDateDesc(user, pageRequest).getContent();
+
+        // Decrypt all entries' content
+        entries.forEach(entry -> {
+            String decryptedContent = encryptionService.decrypt(entry.getContent());
+            entry.setContent(decryptedContent);
+        });
+
+        logger.debug("Decrypted content for {} entries", entries.size());
+
+        return entries;
     }
 
     public void deleteEntry(User user, Long entryId){
