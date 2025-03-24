@@ -33,10 +33,14 @@ public class S3Service {
                 .build();
     }
 
-    public String uploadFile(MultipartFile file, MediaType mediaType) {
+    public String uploadProfilePicture(MultipartFile file) {
+        return uploadFile(file, MediaType.IMAGE, true);
+    }
+
+    public String uploadFile(MultipartFile file, MediaType mediaType, boolean isProfilePicture) {
         try {
             String folder = switch (mediaType) {
-                case IMAGE -> "photos/";
+                case IMAGE -> isProfilePicture ? "profile-pictures/" : "photos/";
                 case VIDEO -> "videos/";
                 default -> "files/";
             };

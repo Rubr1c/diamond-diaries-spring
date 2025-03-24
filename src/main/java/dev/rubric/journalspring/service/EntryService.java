@@ -141,7 +141,6 @@ public class EntryService {
         return entry;
     }
 
-    //TODO: Fetch entries by Date e.g: Entries created in the past month
 
     public Entry addTags(User user, Long entryId,Set<Tag> tags){
         Entry entry = entryRepository.findById(entryId)
@@ -183,7 +182,7 @@ public class EntryService {
         Entry entry = entryOptional.get();
 
         try {
-            String fileUrl = s3Service.uploadFile(file, mediaType);
+            String fileUrl = s3Service.uploadFile(file, mediaType, false);
             Media media = new Media(entry, fileUrl, mediaType);
             mediaRepository.save(media);
 
