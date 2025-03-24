@@ -2,6 +2,7 @@
 
     import dev.rubric.journalspring.config.GetAuthenticatedUserUtility;
     import dev.rubric.journalspring.dto.EntryDto;
+    import dev.rubric.journalspring.exception.ApplicationException;
     import dev.rubric.journalspring.models.Entry;
     import dev.rubric.journalspring.models.User;
     import dev.rubric.journalspring.response.EntryResponse;
@@ -17,6 +18,7 @@
 
     import java.time.LocalDate;
     import java.util.List;
+    import java.util.Map;
     import java.util.stream.Collectors;
 
     @RestController
@@ -57,6 +59,18 @@
                     .toList();
 
             return ResponseEntity.ok(entryResponses);
+        }
+
+        @GetMapping("/ids-by-time-range")
+        public ResponseEntity<Map<LocalDate, List<Long>>> getEntryIdsByTimeRange(
+                @RequestParam LocalDate startDate,
+                @RequestParam LocalDate endDate) {
+
+            User user = userUtility.getAuthenticatedUser();
+            logger.info("User {} is requesting entries for date range: {} : {}", user.getId(), startDate, endDate);
+
+            Map<LocalDate, List<Long>> result = entryService.getEntryIdsByTimeRange(user, startDate, endDate);
+            return ResponseEntity.ok(result);
         }
 
         @GetMapping
