@@ -20,7 +20,8 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@RequestMapping("/api/v1/users")
+
+@RequestMapping("/api/v1/user")
 @RestController
 public class UserController {
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
