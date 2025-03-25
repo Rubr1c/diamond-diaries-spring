@@ -16,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -186,6 +187,9 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(
                             input.email(),
                             input.password()));
+
+            user.setLastLogin(ZonedDateTime.now());
+            userRepository.save(user);
         } catch (Exception e) {
             throw new ApplicationException("Invalid credentials", HttpStatus.UNAUTHORIZED);
         }
