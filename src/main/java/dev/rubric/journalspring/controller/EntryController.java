@@ -156,7 +156,7 @@
 
             try {
 
-                String fileUrl = entryService.uploadMedia(user, entryId, file, mediaType);
+                String fileUrl = entryService.uploadMedia(user, id, file, mediaType);
                 return ResponseEntity.status(HttpStatus.CREATED).body("File uploaded successfully: " + fileUrl);
             } catch (Exception e) {
                 logger.error("Error uploading file: {}", e.getMessage());
