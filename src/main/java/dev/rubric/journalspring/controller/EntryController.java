@@ -16,6 +16,7 @@
     import org.springframework.web.bind.annotation.*;
     import org.springframework.web.multipart.MultipartFile;
 
+    import java.time.LocalDate;
     import java.util.List;
     import java.util.stream.Collectors;
 
@@ -46,6 +47,19 @@
             return ResponseEntity.ok(entryResponse);
         }
          
+
+        @GetMapping("/date/{date}")
+        public ResponseEntity<List<EntryResponse>> getEntriesByDate(@PathVariable LocalDate date){
+            User user = authUtil.getAuthenticatedUser();
+            logger.info("User {} is requesting entries for date: {}", user.getId(), date);
+
+            List<EntryResponse> entryResponses = entryService.getEntriesByYearAndMonth(user, date)
+                    .stream()
+                    .map(EntryResponse::new)
+                    .toList();
+
+            return ResponseEntity.ok(entryResponses);
+        }
 
         @GetMapping
         public ResponseEntity<List<EntryResponse>> getAllUserEntries(){

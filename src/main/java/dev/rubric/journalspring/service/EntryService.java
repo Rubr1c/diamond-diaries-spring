@@ -11,17 +11,21 @@ import dev.rubric.journalspring.response.EntryResponse;
 import dev.rubric.journalspring.response.MediaResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class EntryService {
@@ -96,6 +100,21 @@ public class EntryService {
         return new ArrayList<>(entries);
     }
 
+    public List<Entry> getUserEntries(User user, int offset, int count) {
+        PageRequest pageRequest = PageRequest.of(offset, count, Sort.by(Sort.Direction.DESC, "journalDate"));
+        List<Entry> entries = entryRepository.findAllByUserOrderByJournalDateDesc(user, pageRequest).getContent();
+
+        // Decrypt all entries' content
+        entries.forEach(entry -> {
+            String decryptedContent = encryptionService.decrypt(entry.getContent());
+            entry.setContent(decryptedContent);
+        });
+
+        logger.debug("Decrypted content for {} entries", entries.size());
+
+        return entries;
+    }
+
     public void deleteEntry(User user, Long entryId){
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(
@@ -138,6 +157,30 @@ public class EntryService {
         // Decrypt for the response
         entry.setContent(details.content()); // Use original content for response
         return entry;
+    }
+
+
+    public List<Entry> getEntriesByYearAndMonth(User user, LocalDate date) {
+        if (date.isAfter(LocalDate.now())) {
+            throw new ApplicationException("Date cannot be in the future", HttpStatus.BAD_REQUEST);
+        }
+
+        ZoneId zoneId = ZoneId.systemDefault();
+
+        LocalDate endOfMonthDate = YearMonth.of(date.getYear(), date.getMonth()).atEndOfMonth();
+
+        ZonedDateTime startDate = date.atStartOfDay(zoneId);
+        ZonedDateTime endDate = endOfMonthDate.atTime(23, 59, 59).atZone(zoneId);
+
+        List<Entry> entries = entryRepository.findByDateCreatedBetweenAndUser(startDate, endDate, user);
+
+        if (entries == null || entries.isEmpty()) {
+            throw new ApplicationException(
+                    String.format("No entries found for %d-%02d", date.getYear(), date.getMonthValue()),
+                    HttpStatus.NOT_FOUND);
+        }
+
+        return entries;
     }
 
 
