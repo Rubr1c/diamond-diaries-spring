@@ -36,21 +36,29 @@ public class EntryService {
     private final MediaRepository mediaRepository;
     private final FolderService folderService;
     private final S3Service s3Service;
+    private final SearchService searchService;
 
     @Autowired
-    public EntryService(EntryRepository entryRepository, EncryptionService encryptionService, MediaRepository mediaRepository, FolderService folderService, S3Service s3Service) {
+    public EntryService(
+            EntryRepository entryRepository,
+            EncryptionService encryptionService,
+            MediaRepository mediaRepository,
+            FolderService folderService,
+            S3Service s3Service,
+            SearchService searchService) {
         this.entryRepository = entryRepository;
         this.encryptionService = encryptionService;
         this.mediaRepository = mediaRepository;
         this.s3Service = s3Service;
         this.folderService = folderService;
+        this.searchService = searchService;
     }
 
     public Entry addEntry(User user, EntryDto details) {
         // Encrypt the content before saving
         String encryptedContent = encryptionService.encrypt(details.content());
         logger.debug("Content encrypted for new entry");
-        
+
         Entry entry = new Entry(
                 user,
                 details.folder(),
@@ -61,7 +69,11 @@ public class EntryService {
 
         entryRepository.save(entry);
         logger.info("Entry with id {} created for user {}", entry.getId(), user.getId());
-        
+
+        // Index the entry for searching
+        searchService.indexEntry(entry, details.content());
+        logger.debug("Entry indexed for search");
+
         // Decrypt for the response
         entry.setContent(details.content()); // Use original content for response
         return entry;
@@ -73,12 +85,12 @@ public class EntryService {
                         String.format("Entry with %d not found", entryId),
                         HttpStatus.NOT_FOUND));
 
-        if(!entry.getUser().equals(user)){
+        if (!entry.getUser().equals(user)) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
         }
-        
+
         // Decrypt the content before returning
         String decryptedContent = encryptionService.decrypt(entry.getContent());
         entry.setContent(decryptedContent);
@@ -87,17 +99,17 @@ public class EntryService {
         return entry;
     }
 
-    public List<Entry> getAllUserEntries(User user){
+    public List<Entry> getAllUserEntries(User user) {
 
         List<Entry> entries = entryRepository.findAllByUser(user);
-        
+
         // Decrypt all entries' content
         entries.forEach(entry -> {
             String decryptedContent = encryptionService.decrypt(entry.getContent());
             entry.setContent(decryptedContent);
         });
         logger.debug("Decrypted content for {} entries", entries.size());
-        
+
         return new ArrayList<>(entries);
     }
 
@@ -116,28 +128,32 @@ public class EntryService {
         return entries;
     }
 
-    public void deleteEntry(User user, Long entryId){
+    public void deleteEntry(User user, Long entryId) {
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(
                         String.format("Entry with %d not found", entryId),
                         HttpStatus.NOT_FOUND));
 
-        if(!entry.getUser().equals(user)){
+        if (!entry.getUser().equals(user)) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
         }
 
+        // Remove search tokens before deleting the entry
+        searchService.removeEntryTokens(entry);
+        logger.debug("Search tokens removed for entry {}", entryId);
+
         entryRepository.deleteById(entryId);
     }
 
-    public Entry updateEntry(User user, EntryDto details, Long entryId){
+    public Entry updateEntry(User user, EntryDto details, Long entryId) {
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(
                         String.format("Entry with %d not found", entryId),
                         HttpStatus.NOT_FOUND));
 
-        if(!entry.getUser().equals(user)){
+        if (!entry.getUser().equals(user)) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
@@ -146,7 +162,7 @@ public class EntryService {
         // Encrypt the updated content
         String encryptedContent = encryptionService.encrypt(details.content());
         logger.debug("Content encrypted for updated entry id: {}", entryId);
-        
+
         entry.setLastEdited(ZonedDateTime.now());
         entry.setContent(encryptedContent);
         entry.setFavorite(details.isFavorite());
@@ -154,12 +170,15 @@ public class EntryService {
         entry.setWordCount(details.wordCount());
 
         entryRepository.save(entry);
-        
+
+        // Update search tokens for the entry
+        searchService.indexEntry(entry, details.content());
+        logger.debug("Search tokens updated for entry {}", entryId);
+
         // Decrypt for the response
         entry.setContent(details.content()); // Use original content for response
         return entry;
     }
-
 
     public List<Entry> getEntriesByYearAndMonth(User user, LocalDate date) {
         if (date.isAfter(LocalDate.now())) {
@@ -181,35 +200,55 @@ public class EntryService {
                     HttpStatus.NOT_FOUND);
         }
 
+        // Decrypt all entries' content
+        entries.forEach(entry -> {
+            String decryptedContent = encryptionService.decrypt(entry.getContent());
+            entry.setContent(decryptedContent);
+        });
+
         return entries;
     }
 
-
-    public Entry addTags(User user, Long entryId,Set<Tag> tags){
+    public Entry addTags(User user, Long entryId, Set<Tag> tags) {
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(
                         String.format("Entry with %d not found", entryId),
                         HttpStatus.NOT_FOUND));
 
-        if(!entry.getUser().equals(user)){
+        if (!entry.getUser().equals(user)) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
         }
         entry.addTags(tags);
         entryRepository.save(entry);
+
+        // Re-index the entry after adding tags
+        String decryptedContent = encryptionService.decrypt(entry.getContent());
+        searchService.indexEntry(entry, decryptedContent);
+
         return entry;
     }
 
+    /**
+     * Search for entries matching the query
+     * 
+     * @param user  The user performing the search
+     * @param query The search query
+     * @return List of entries matching the query
+     */
+    public List<Entry> searchEntries(User user, String query) {
+        return searchService.search(user, query);
+    }
 
-    //Fetching Entry
-    public Entry verifyUserOwnsEntry(User user, Long entryId){
+    // Fetching Entry
+    public Entry verifyUserOwnsEntry(User user, Long entryId) {
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(
                         String.format("Entry with %d not found", entryId),
                         HttpStatus.NOT_FOUND));
 
-        if(!entry.getUser().equals(user)){
+        if (!entry.getUser().equals(user)) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
@@ -226,7 +265,7 @@ public class EntryService {
     }
 
     public void removeEntryFromFolder(User user,
-                                      Long entryId) {
+            Long entryId) {
         Entry entry = verifyUserOwnsEntry(user, entryId);
         entry.setFolder(null);
         entryRepository.save(entry);
@@ -244,7 +283,7 @@ public class EntryService {
         // Upload file to S3 with private access
         String s3Key = s3Service.uploadFile(file, mediaType);
 
-        //Store the permanent URL in the database
+        // Store the permanent URL in the database
         String s3Url = "https://diamond-diaries-media.s3.amazonaws.com/" + s3Key;
 
         // Generate the presigned URL
@@ -290,5 +329,5 @@ public class EntryService {
         // Remove from database
         mediaRepository.delete(media);
     }
-    
+
 }
