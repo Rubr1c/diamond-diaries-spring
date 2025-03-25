@@ -128,6 +128,39 @@ public class EntryServiceUnitTests {
         assertDoesNotThrow(() -> entryService.addEntry(mockUser, entryDto));
     }
 
+    @Test
+    void addEntry_EncryptsContent() {
+        User mockUser = new User();
+        mockUser.setId(1L);
+
+        Folder mockFolder = new Folder(mockUser, "testFolder");
+
+        EntryDto entryDto = new EntryDto(
+                "testTitle",
+                mockFolder,
+                "testContent",
+                Set.of(new Tag("testTag")),
+                1,
+                true
+        );
+
+        String encryptedContent = "encryptedTestContent";
+        when(encryptionService.encrypt("testContent")).thenReturn(encryptedContent);
+
+        Entry savedEntry = new Entry(mockUser, entryDto.folder(), entryDto.title(), encryptedContent, entryDto.tags(), entryDto.wordCount());
+        savedEntry.setPublicId(UUID.randomUUID());
+
+        when(entryRepository.save(any(Entry.class))).thenReturn(savedEntry);
+
+        Entry response = entryService.addEntry(mockUser, entryDto);
+
+        verify(encryptionService, times(1)).encrypt("testContent");
+        verify(entryRepository, times(1)).save(any(Entry.class));
+
+        assertEquals(encryptedContent, response.getContent());
+    }
+
+
 
     @Test
     void getEntryById_InvalidUser() {
@@ -152,6 +185,20 @@ public class EntryServiceUnitTests {
 
         assertEquals("User with id 2 is not authorized", exception.getMessage());
         assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+    }
+
+    @Test
+    void getEntryById_NotFound() {
+        when(entryRepository.findById(1L)).thenReturn(Optional.empty());
+
+        ApplicationException exception = assertThrows(ApplicationException.class, () -> {
+            entryService.getEntryById(new User(), 1L);
+        });
+
+        assertEquals("Entry with 1 not found", exception.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+
+        verify(entryRepository, times(1)).findById(1L);
     }
 
     @Test

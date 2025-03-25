@@ -20,6 +20,9 @@ public class Media {
     @Column(nullable = false)
     private MediaType type;
 
+    @Column(name = "s3_key", nullable = false, length = 2048)
+    private String s3Key;
+
     public Media(Entry entry, String url, MediaType type) {
         this.entry = entry;
         this.url = url;
@@ -27,6 +30,14 @@ public class Media {
     }
 
     public Media() {}
+
+    public String getS3Key() {
+        return s3Key;
+    }
+
+    public void setS3Key(String s3Key) {
+        this.s3Key = s3Key;
+    }
 
     public Long getId() {
         return id;
@@ -57,6 +68,14 @@ public class Media {
     }
 
     public void setType(MediaType type) {
+        this.type = type;
+    }
+
+    public MediaType getMediaType() {
+        return type;
+    }
+
+    public void setMediaType(MediaType type) {
         this.type = type;
     }
 }
