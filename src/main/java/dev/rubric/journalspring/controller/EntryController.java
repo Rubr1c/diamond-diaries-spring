@@ -36,6 +36,7 @@
         }
 
 
+        /*
         @GetMapping("/{id}")
         public ResponseEntity<EntryResponse> getEntryById(@PathVariable Long id){
             User user = authUtil.getAuthenticatedUser();
@@ -45,6 +46,7 @@
             EntryResponse entryResponse = new EntryResponse(entryService.getEntryById(user, id));
             return ResponseEntity.ok(entryResponse);
         }
+         */
 
         @GetMapping
         public ResponseEntity<List<EntryResponse>> getAllUserEntries(){
@@ -141,7 +143,7 @@
             }
 
             try {
-                String fileUrl = entryService.uploadMedia(entryId, file, mediaType);
+                String fileUrl = entryService.uploadMedia(user, entryId, file, mediaType);
                 return ResponseEntity.status(HttpStatus.CREATED).body("File uploaded successfully: " + fileUrl);
             } catch (Exception e) {
                 logger.error("Error uploading file: {}", e.getMessage());
