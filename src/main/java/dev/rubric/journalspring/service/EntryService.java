@@ -1,13 +1,17 @@
 package dev.rubric.journalspring.service;
 
+import dev.rubric.journalspring.config.S3Service;
 import dev.rubric.journalspring.dto.EntryDto;
+import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.Entry;
+import dev.rubric.journalspring.models.Media;
 import dev.rubric.journalspring.models.Tag;
 import dev.rubric.journalspring.models.User;
 import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.MediaRepository;
 import dev.rubric.journalspring.repository.UserRepository;
+import dev.rubric.journalspring.response.MediaResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -15,6 +19,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -34,14 +39,16 @@ public class EntryService {
     private final EncryptionService encryptionService;
     private final MediaRepository mediaRepository;
     private final UserRepository userRepository;
+    private final S3Service s3Service;
 
     @Autowired
     public EntryService(EntryRepository entryRepository, EncryptionService encryptionService,
-            MediaRepository mediaRepository, UserRepository userRepository) {
+                        MediaRepository mediaRepository, UserRepository userRepository, S3Service s3Service) {
         this.entryRepository = entryRepository;
         this.encryptionService = encryptionService;
         this.mediaRepository = mediaRepository;
         this.userRepository = userRepository;
+        this.s3Service = s3Service;
     }
 
     public Entry addEntry(User user, EntryDto details) {
@@ -275,5 +282,58 @@ public class EntryService {
                     HttpStatus.UNAUTHORIZED);
         }
     }
+    public String uploadMedia(User user, Long entryId, MultipartFile file, MediaType mediaType) {
+        Entry entry = getEntryById(user, entryId);
+
+        // Upload file to S3 with private access
+        String s3Key = s3Service.uploadFile(file, mediaType);
+
+        //Store the permanent URL in the database
+        String s3Url = "https://diamond-diaries-media.s3.amazonaws.com/" + s3Key;
+
+        // Generate the presigned URL
+        String presignedUrl = s3Service.generatePresignedUrl(s3Key);
+
+        // Save media record with S3 key and URL
+        Media media = new Media();
+        media.setEntry(entry);
+        media.setMediaType(mediaType);
+        media.setS3Key(s3Key);
+        media.setUrl(s3Url);
+        mediaRepository.save(media);
+
+        return presignedUrl;
+    }
+
+    // Get all media for an entry with secure URLs
+    public List<MediaResponse> getMediaByEntryId(Long entryId) {
+        List<Media> mediaList = mediaRepository.findAllByEntryId(entryId);
+
+        return mediaList.stream()
+                .map(media -> {
+                    // Generate a fresh pre-signed URL for each media item
+                    String presignedUrl = s3Service.generatePresignedUrl(media.getS3Key());
+                    return new MediaResponse(media, presignedUrl);
+                })
+                .collect(Collectors.toList());
+    }
+
+    // Delete media securely
+    public void deleteMedia(Long mediaId, Long entryId) {
+        Media media = mediaRepository.findById(mediaId)
+                .orElseThrow(() -> new ApplicationException("Media not found", HttpStatus.NOT_FOUND));
+
+        // Verify the media belongs to the specified entry
+        if (!media.getEntry().getId().equals(entryId)) {
+            throw new ApplicationException("Media does not belong to the specified entry", HttpStatus.BAD_REQUEST);
+        }
+
+        // Delete from S3 using the S3 key
+        s3Service.deleteFile(media.getS3Key());
+
+        // Remove from database
+        mediaRepository.delete(media);
+    }
+
 
 }
