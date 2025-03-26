@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @Component
@@ -74,7 +75,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                         googleId,
                         name,
                         email,
-                        "", // Empty password for OAuth users
+                        null, // Empty password for OAuth users
                         picture != null ? picture : "");
                 user.setActivated(true); // Google-authenticated users are automatically verified
                 user = userRepository.save(user);
@@ -91,7 +92,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                     needsUpdate = true;
                 }
 
-                if (picture != null && !picture.equals(user.getProfilePicture())) {
+                if (picture != null && !picture.equals(user.getProfilePicture())
+                        && Objects.equals(user.getProfilePicture(), "")) {
                     logger.info("Updating existing user's profile picture");
                     user.setProfilePicture(picture);
                     needsUpdate = true;
