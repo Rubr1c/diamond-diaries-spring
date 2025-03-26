@@ -30,7 +30,7 @@ public class SearchController {
             @AuthenticationPrincipal User user,
             @RequestParam("query") String query) {
 
-        logger.debug("Search request from user {} with query: {}", user.getId(), query);
+        logger.debug("Search request from user '{}' with query '{}'", user.getId(), query);
 
         List<Entry> searchResults = entryService.searchEntries(user, query);
 
@@ -38,7 +38,7 @@ public class SearchController {
                 .map(EntryResponse::new)
                 .collect(Collectors.toList());
 
-        logger.debug("Returning {} search results for query: {}", responseList.size(), query);
+        logger.debug("Returning {} search results for query '{}'", responseList.size(), query);
 
         return ResponseEntity.ok(responseList);
     }

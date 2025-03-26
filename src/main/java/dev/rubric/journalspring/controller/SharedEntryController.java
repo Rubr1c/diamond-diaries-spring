@@ -1,13 +1,13 @@
 package dev.rubric.journalspring.controller;
 
 
-import dev.rubric.journalspring.config.AuthUtil;
 import dev.rubric.journalspring.dto.SharedEntryDto;
 import dev.rubric.journalspring.models.Entry;
 import dev.rubric.journalspring.models.User;
 import dev.rubric.journalspring.response.EntryResponse;
 import dev.rubric.journalspring.service.SharedEntryService;
-import dev.rubric.journalspring.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +20,7 @@ import java.util.UUID;
 public class SharedEntryController {
 
     private final SharedEntryService sharedEntryService;
+    private final Logger logger = LoggerFactory.getLogger(SharedEntryController.class);
 
     public SharedEntryController(SharedEntryService sharedEntryService) {
         this.sharedEntryService = sharedEntryService;
@@ -29,6 +30,9 @@ public class SharedEntryController {
     @PostMapping("/new")
     public ResponseEntity<UUID> share(@AuthenticationPrincipal User user,
                                       @RequestBody SharedEntryDto input) {
+
+        logger.debug("User '{}' is sharing entry '{}'", user.getEmail(), input.entryId());
+
         UUID entryId = sharedEntryService.createSharedEntry(user, input);
 
         return ResponseEntity.ok(entryId);
@@ -37,6 +41,8 @@ public class SharedEntryController {
     @GetMapping("/{id}")
     public ResponseEntity<EntryResponse> get(@AuthenticationPrincipal User user,
                                              @PathVariable UUID id) {
+
+        logger.debug("User '{}' is requesting to access shared entry '{}'", user.getEmail(), id);
 
         Entry entry = sharedEntryService.accessSharedEntry(user, id);
 
@@ -47,8 +53,12 @@ public class SharedEntryController {
     public ResponseEntity<String> addUser(@AuthenticationPrincipal User user,
                                           @PathVariable UUID id,
                                           @RequestBody Map<String, String> input) {
+        String email = input.get("userEmail");
+
+        logger.debug("User '{}' is adding user '{}' to shared entry '{}'", user.getEmail(), email, id);
+
         sharedEntryService
-                .addUserToSharedEntry(user, id, input.get("userEmail"));
+                .addUserToSharedEntry(user, id, email);
 
         return ResponseEntity.ok("User added to entry");
     }
@@ -57,8 +67,13 @@ public class SharedEntryController {
     public ResponseEntity<String> removeUser(@AuthenticationPrincipal User user,
                                              @PathVariable UUID id,
                                              @RequestBody Map<String, String> input) {
+
+        String email = input.get("userEmail");
+
+        logger.debug("User '{}' is removing user '{}' to shared entry '{}'", user.getEmail(), email, id);
+
         sharedEntryService
-                .removeUserToSharedEntry(user, id, input.get("userEmail"));
+                .removeUserToSharedEntry(user, id, email);
 
         return ResponseEntity.ok("User removed to entry");
     }

@@ -3,6 +3,8 @@ package dev.rubric.journalspring.controller;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.User;
 import dev.rubric.journalspring.service.AiService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,6 +19,7 @@ import java.io.IOException;
 public class AiController {
 
     private final AiService aiService;
+    private final Logger logger = LoggerFactory.getLogger(AiController.class);
 
     public AiController(AiService aiService) {
         this.aiService = aiService;
@@ -24,6 +27,9 @@ public class AiController {
 
     @PostMapping("/daily-prompt")
     public ResponseEntity<String> generateText(@AuthenticationPrincipal User user) {
+
+        logger.debug("User {} is generating a ai prompt", user.getEmail());
+
         try {
             return ResponseEntity.ok(aiService.generatePrompt(user));
         } catch (ApplicationException e) {

@@ -29,12 +29,18 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<String> register(@RequestBody RegisterUserDto registerUserDto) {
+
+        logger.debug("New user trying to sign up with email '{}'", registerUserDto.email());
+
         authenticationService.signup(registerUserDto);
         return ResponseEntity.ok("Created account successfully");
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticate(@RequestBody LoginUserDto loginUserDto) {
+
+        logger.debug("User '{}' trying to login", loginUserDto.email());
+
         try {
             User authenticatedUser = authenticationService.authenticate(loginUserDto);
             String jwtToken = jwtService.generateToken(authenticatedUser);
@@ -50,6 +56,9 @@ public class AuthController {
 
     @PostMapping("/verify-2fa")
     public ResponseEntity<LoginResponse> verify2FA(@RequestBody VerifyUserDto verifyUserDto) {
+
+        logger.debug("User '{}' is verifying with 2fa", verifyUserDto.email());
+
         User authenticatedUser = authenticationService.verify2FA(verifyUserDto);
         String jwtToken = jwtService.generateToken(authenticatedUser);
         LoginResponse loginResponse = new LoginResponse(jwtToken, jwtService.getExpirationTime());
@@ -58,31 +67,37 @@ public class AuthController {
 
     @PostMapping("/verify")
     public ResponseEntity<String> verifyUser(@RequestBody VerifyUserDto verifyUserDto) {
+
+        logger.debug("User '{}' is verifying their account", verifyUserDto.email());
+
         authenticationService.verifyUser(verifyUserDto);
         return ResponseEntity.ok("Account verified");
     }
 
     @PostMapping("/resend-verification")
     public ResponseEntity<String> resendVerification(@RequestParam String email) {
+
+        logger.debug("User '{}' has resent verification email", email);
+
         authenticationService.resendVerificationCode(email);
         return ResponseEntity.ok("Code Resent");
     }
 
     @PostMapping("/forgot-password")
     public ResponseEntity<String> initiatePasswordReset(@RequestParam String email) {
+
+        logger.debug("User '{}' has forgotten password", email);
+
         authenticationService.initiatePasswordReset(email);
         return ResponseEntity.ok("Password reset email sent");
     }
 
     @PostMapping("/reset-password")
     public ResponseEntity<String> resetPassword(@RequestBody UpdatePasswordDto updatePasswordDto) {
+
+        logger.debug("User '{}' is changing their password", updatePasswordDto.email());
+
         authenticationService.updatePassword(updatePasswordDto);
         return ResponseEntity.ok("Password updated successfully");
-    }
-
-    @GetMapping("/login/google")
-    public ResponseEntity<String> googleLogin() {
-        String googleAuthUrl = "/oauth2/authorization/google";
-        return ResponseEntity.ok("To login with Google, redirect to: " + googleAuthUrl);
     }
 }

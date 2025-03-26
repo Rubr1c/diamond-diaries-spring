@@ -1,6 +1,5 @@
     package dev.rubric.journalspring.controller;
 
-    import dev.rubric.journalspring.config.AuthUtil;
     import dev.rubric.journalspring.dto.EntryDto;
     import dev.rubric.journalspring.enums.MediaType;
     import dev.rubric.journalspring.exception.ApplicationException;
@@ -8,7 +7,6 @@
     import dev.rubric.journalspring.response.EntryResponse;
     import dev.rubric.journalspring.response.MediaResponse;
     import dev.rubric.journalspring.service.EntryService;
-    import dev.rubric.journalspring.service.UserService;
     import org.slf4j.Logger;
     import org.slf4j.LoggerFactory;
     import org.springframework.http.HttpStatus;
@@ -33,7 +31,6 @@
 
         public EntryController(EntryService entryService) {
             this.entryService = entryService;
-
         }
 
 
@@ -41,7 +38,7 @@
         public ResponseEntity<EntryResponse> getEntryById(@AuthenticationPrincipal User user,
                                                           @PathVariable Long id) {
 
-            logger.info("User {} is requesting entry with ID: {}", user.getId(), id);
+            logger.debug("User '{}' is requesting entry with id '{}'", user.getId(), id);
 
             EntryResponse entryResponse = new EntryResponse(entryService.getEntryById(user, id));
             return ResponseEntity.ok(entryResponse);
@@ -51,7 +48,7 @@
         @GetMapping("/date/{date}")
         public ResponseEntity<List<EntryResponse>> getEntriesByDate(@AuthenticationPrincipal User user,
                                                                     @PathVariable LocalDate date){
-            logger.info("User {} is requesting entries for date: {}", user.getId(), date);
+            logger.debug("User '{}' is requesting entries for date '{}'", user.getId(), date);
 
             List<EntryResponse> entryResponses = entryService.getEntriesByYearAndMonth(user, date)
                     .stream()
@@ -63,7 +60,7 @@
 
         @GetMapping
         public ResponseEntity<List<EntryResponse>> getAllUserEntries(@AuthenticationPrincipal User user){
-            logger.info("User {} is requesting all journal entries", user.getId());
+            logger.debug("User '{}' is requesting all journal entries", user.getId());
 
             List<EntryResponse> entries = entryService.getAllUserEntries(user)
                     .stream()
@@ -76,7 +73,7 @@
         @PostMapping("/new")
         public ResponseEntity<String> addEntry(@AuthenticationPrincipal User user,
                                                @RequestBody EntryDto entryDto){
-            logger.info("User '{}' is adding a new journal entry", user.getId());
+            logger.debug("User '{}' is adding a new journal entry", user.getId());
 
             entryService.addEntry(user, entryDto);
             return ResponseEntity.status(HttpStatus.CREATED).body("Entry created successfully");
@@ -86,7 +83,7 @@
         public ResponseEntity<EntryResponse> updateEntry(@AuthenticationPrincipal User user,
                                                          @RequestBody EntryDto entryDto,
                                                          @PathVariable Long id){
-            logger.info("User '{}' is updating a journal entry with id {}", user.getId(), id);
+            logger.debug("User '{}' is updating a journal entry with id '{}'", user.getId(), id);
 
             EntryResponse updateEntry =  new EntryResponse(entryService.updateEntry(user, entryDto, id));
             return ResponseEntity.ok(updateEntry);
@@ -95,7 +92,7 @@
         @DeleteMapping("/{id}")
         public ResponseEntity<Void> deleteEntry(@AuthenticationPrincipal User user,
                                                 @PathVariable Long id){
-            logger.info("User {} is deleting journal entry with id {}", user.getId(), id);
+            logger.debug("User '{}' is deleting journal entry with id '{}'", user.getId(), id);
 
             entryService.deleteEntry(user, id);
             return ResponseEntity.noContent().build();
@@ -105,8 +102,10 @@
         public ResponseEntity<String> addToFolder(@AuthenticationPrincipal User user,
                                                   @PathVariable Long id,
                                                   @PathVariable Long folderId) {
-            entryService.addEntryToFolder(user, id, folderId);
 
+            logger.debug("User '{}' is adding entry '{}' in folder '{}'", user.getEmail(), id, folderId);
+
+            entryService.addEntryToFolder(user, id, folderId);
             return ResponseEntity.ok("Added entry to folder");
         }
 
@@ -121,6 +120,9 @@
         @GetMapping("/folder/{folderId}")
         public ResponseEntity<List<EntryResponse>> getAllFromFolder(@AuthenticationPrincipal User user,
                                                                     @PathVariable Long folderId) {
+
+            logger.debug("User '{}' is getting all entries from folder '{}'", user.getEmail(), folderId);
+
             List<EntryResponse> entries = entryService
                     .getAllEntriesFromFolder(user, folderId)
                     .stream()
@@ -133,11 +135,11 @@
         @GetMapping("/{id}/media")
         public ResponseEntity<List<MediaResponse>> getAllMediaForEntry(@AuthenticationPrincipal User user,
                                                                        @PathVariable Long id) {
-            logger.info("Received request for media of entry {}", id);
+            logger.debug("Received request for media of entry {}", id);
 
             entryService.verifyUserOwnsEntry(user, id);
 
-            logger.info("User {} is fetching all media for journal entry with id {}", user.getId(), id);
+            logger.debug("User {} is fetching all media for journal entry with id {}", user.getId(), id);
 
             List<MediaResponse> mediaResponses = entryService.getMediaByEntryId(id);
 
@@ -149,6 +151,8 @@
                                                          @PathVariable Long id,
                                                          @RequestParam("mediaType") MediaType mediaType,
                                                          @RequestParam("file") MultipartFile file) {
+
+            logger.debug("User '{}' adding new media to entry '{}'", user.getEmail(), id);
 
             entryService.verifyUserOwnsEntry(user, id);
 
@@ -171,6 +175,9 @@
         public ResponseEntity<String> deleteMediaForEntry(@AuthenticationPrincipal User user,
                                                           @PathVariable Long id,
                                                           @PathVariable Long mediaId) {
+
+            logger.debug("User '{}' adding deleting media '{}' for entry '{}'", user.getEmail(), mediaId, id);
+
             try {
                 entryService.verifyUserOwnsEntry(user, id);
                 entryService.deleteMedia(mediaId, id);

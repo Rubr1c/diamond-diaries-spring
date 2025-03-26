@@ -30,6 +30,8 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserResponse> authenticatedUser(@AuthenticationPrincipal User user) {
 
+        logger.debug("User '{}' requesting their info", user.getEmail());
+
         UserResponse response = new UserResponse(user);
 
         return ResponseEntity.ok(response);
@@ -39,6 +41,9 @@ public class UserController {
     public ResponseEntity<String> uploadProfilePicture(@AuthenticationPrincipal User user,
                                                        @RequestParam("profilePicture")
                                                        MultipartFile profilePicture) {
+
+        logger.debug("User '{}' is uploading new profile picture", user.getEmail());
+
 
         if (profilePicture.isEmpty()) {
             return ResponseEntity.badRequest().body("File must not be empty");
@@ -59,6 +64,8 @@ public class UserController {
 
     @DeleteMapping
     public ResponseEntity<String> deleteProfilePicture(@AuthenticationPrincipal User user){
+
+        logger.debug("User '{}' is deleting profile picture", user.getEmail());
 
         if(user.getProfilePicture() != null){
             try{
