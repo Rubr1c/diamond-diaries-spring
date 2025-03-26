@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface MediaRepository extends CrudRepository<Media, Long> {
     List<Media> findByEntryId(Long entryId);
+
+    List<Media> findAllByEntryId(Long entryId);
 }

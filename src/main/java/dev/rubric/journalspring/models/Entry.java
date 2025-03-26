@@ -28,7 +28,7 @@ public class Entry {
     @JoinColumn(name = "folder_id")
     private Folder folder;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String title;
 
     @Column(nullable = false, columnDefinition = "TEXT")
