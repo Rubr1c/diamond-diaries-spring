@@ -162,4 +162,8 @@ public class Entry {
     public void addTags(Set<Tag> tags) {
         this.tags.addAll(tags);
     }
+
+    public void setJournalDate(LocalDate journalDate) {
+        this.journalDate = journalDate;
+    }
 }
