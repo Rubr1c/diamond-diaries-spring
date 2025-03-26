@@ -37,10 +37,11 @@ public class EntryService {
     private final MediaRepository mediaRepository;
     private final UserRepository userRepository;
     private final S3Service s3Service;
+    private final FolderService folderService;
 
     @Autowired
     public EntryService(EntryRepository entryRepository, EncryptionService encryptionService,
-                        MediaRepository mediaRepository, UserRepository userRepository, S3Service s3Service) {
+                        MediaRepository mediaRepository, UserRepository userRepository, S3Service s3Service , FolderService folderService) {
         this.entryRepository = entryRepository;
         this.encryptionService = encryptionService;
         this.mediaRepository = mediaRepository;
@@ -268,7 +269,7 @@ public class EntryService {
     }
 
     // Fetching Entry
-    public void verifyUserOwnsEntry(User user, Long entryId) {
+    public Entry verifyUserOwnsEntry(User user, Long entryId) {
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(
                         String.format("Entry with %d not found", entryId),
@@ -279,6 +280,8 @@ public class EntryService {
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
         }
+
+        return entry;
     }
     public String uploadMedia(User user, Long entryId, MultipartFile file, MediaType mediaType) {
         Entry entry = getEntryById(user, entryId);
