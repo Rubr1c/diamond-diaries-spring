@@ -135,17 +135,19 @@ public class EntryServiceUnitTests {
 
         Folder mockFolder = new Folder(mockUser, "testFolder");
 
+        String originalContent = "testContent";
         EntryDto entryDto = new EntryDto(
                 "testTitle",
                 mockFolder,
-                "testContent",
+                originalContent,
                 Set.of(new Tag("testTag")),
                 1,
                 true
         );
 
+        // Prepare the mock to return a specific encrypted content
         String encryptedContent = "encryptedTestContent";
-        when(encryptionService.encrypt("testContent")).thenReturn(encryptedContent);
+        when(encryptionService.encrypt(originalContent)).thenReturn(encryptedContent);
 
         Entry savedEntry = new Entry(mockUser, entryDto.folder(), entryDto.title(), encryptedContent, entryDto.tags(), entryDto.wordCount());
         savedEntry.setPublicId(UUID.randomUUID());
@@ -154,10 +156,13 @@ public class EntryServiceUnitTests {
 
         Entry response = entryService.addEntry(mockUser, entryDto);
 
-        verify(encryptionService, times(1)).encrypt("testContent");
+        // Verify encrypt was called exactly once
+        verify(encryptionService, times(1)).encrypt(originalContent);
         verify(entryRepository, times(1)).save(any(Entry.class));
 
+        // Assert the encrypted content is correct
         assertEquals(encryptedContent, response.getContent());
+        assertNotEquals(originalContent, response.getContent());
     }
 
 
