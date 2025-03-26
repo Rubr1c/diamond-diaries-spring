@@ -49,6 +49,7 @@ public class EntryService {
         this.mediaRepository = mediaRepository;
         this.userRepository = userRepository;
         this.s3Service = s3Service;
+        this.folderService = folderService;
     }
 
     public Entry addEntry(User user, EntryDto details) {
