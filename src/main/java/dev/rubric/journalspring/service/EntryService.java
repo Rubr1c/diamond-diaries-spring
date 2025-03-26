@@ -1,14 +1,13 @@
 package dev.rubric.journalspring.service;
 
-import dev.rubric.journalspring.config.S3Service;
 import dev.rubric.journalspring.dto.EntryDto;
-import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
-import dev.rubric.journalspring.models.*;
+import dev.rubric.journalspring.models.Entry;
+import dev.rubric.journalspring.models.Tag;
+import dev.rubric.journalspring.models.User;
 import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.MediaRepository;
-import dev.rubric.journalspring.response.EntryResponse;
-import dev.rubric.journalspring.response.MediaResponse;
+import dev.rubric.journalspring.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -16,15 +15,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,23 +33,25 @@ public class EntryService {
     private final EntryRepository entryRepository;
     private final EncryptionService encryptionService;
     private final MediaRepository mediaRepository;
-    private final FolderService folderService;
-    private final S3Service s3Service;
+    private final UserRepository userRepository;
 
     @Autowired
-    public EntryService(EntryRepository entryRepository, EncryptionService encryptionService, MediaRepository mediaRepository, FolderService folderService, S3Service s3Service) {
+    public EntryService(EntryRepository entryRepository, EncryptionService encryptionService,
+            MediaRepository mediaRepository, UserRepository userRepository) {
         this.entryRepository = entryRepository;
         this.encryptionService = encryptionService;
         this.mediaRepository = mediaRepository;
-        this.s3Service = s3Service;
-        this.folderService = folderService;
+        this.userRepository = userRepository;
     }
 
     public Entry addEntry(User user, EntryDto details) {
+        // Update user streak based on entry dates
+        updateUserStreak(user);
+
         // Encrypt the content before saving
         String encryptedContent = encryptionService.encrypt(details.content());
         logger.debug("Content encrypted for new entry");
-        
+
         Entry entry = new Entry(
                 user,
                 details.folder(),
@@ -61,8 +62,47 @@ public class EntryService {
 
         entryRepository.save(entry);
         logger.info("Entry with id {} created for user {}", entry.getId(), user.getId());
-        
+
+        // Decrypt for the response
+        entry.setContent(details.content()); // Use original content for response
         return entry;
+    }
+
+    /**
+     * Updates the user's streak based on the date of their most recent entry.
+     * - If the new entry is one day after the previous entry: increment streak
+     * - If the new entry is on the same day as the previous entry: do nothing
+     * Note: Streak reset logic (for gaps > 1 day) is handled in AuthService when
+     * the user logs in
+     */
+    private void updateUserStreak(User user) {
+        LocalDate today = LocalDate.now();
+
+        // Find the most recent entry for this user
+        List<Entry> recentEntries = entryRepository.findAllByUserOrderByJournalDateDesc(user, PageRequest.of(0, 1))
+                .getContent();
+
+        if (recentEntries.isEmpty()) {
+            // This is the user's first entry, set streak to 1
+            user.setStreak(1);
+            userRepository.save(user);
+            logger.info("First entry for user {}, set streak to 1", user.getId());
+            return;
+        }
+
+        LocalDate lastEntryDate = recentEntries.get(0).getJournalDate();
+
+        if (today.equals(lastEntryDate)) {
+            // Entry created on the same day, do nothing with streak
+            logger.debug("Entry created on same day for user {}, streak remains {}", user.getId(), user.getStreak());
+        } else if (today.equals(lastEntryDate.plusDays(1))) {
+            // Entry created exactly one day after the previous entry, increment streak
+            Integer newStreak = user.getStreak() + 1;
+            user.setStreak(newStreak);
+            userRepository.save(user);
+            logger.info("Incremented streak for user {} to {}", user.getId(), newStreak);
+        }
+        // Note: We don't handle the reset case here as it's now done in AuthService
     }
 
     public Entry getEntryById(User user, Long entryId) {
@@ -71,12 +111,12 @@ public class EntryService {
                         String.format("Entry with %d not found", entryId),
                         HttpStatus.NOT_FOUND));
 
-        if(!entry.getUser().equals(user)){
+        if (!entry.getUser().equals(user)) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
         }
-        
+
         // Decrypt the content before returning
         String decryptedContent = encryptionService.decrypt(entry.getContent());
         entry.setContent(decryptedContent);
@@ -85,17 +125,17 @@ public class EntryService {
         return entry;
     }
 
-    public List<Entry> getAllUserEntries(User user){
+    public List<Entry> getAllUserEntries(User user) {
 
         List<Entry> entries = entryRepository.findAllByUser(user);
-        
+
         // Decrypt all entries' content
         entries.forEach(entry -> {
             String decryptedContent = encryptionService.decrypt(entry.getContent());
             entry.setContent(decryptedContent);
         });
         logger.debug("Decrypted content for {} entries", entries.size());
-        
+
         return new ArrayList<>(entries);
     }
 
@@ -114,13 +154,13 @@ public class EntryService {
         return entries;
     }
 
-    public void deleteEntry(User user, Long entryId){
+    public void deleteEntry(User user, Long entryId) {
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(
                         String.format("Entry with %d not found", entryId),
                         HttpStatus.NOT_FOUND));
 
-        if(!entry.getUser().equals(user)){
+        if (!entry.getUser().equals(user)) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
@@ -129,13 +169,13 @@ public class EntryService {
         entryRepository.deleteById(entryId);
     }
 
-    public Entry updateEntry(User user, EntryDto details, Long entryId){
+    public Entry updateEntry(User user, EntryDto details, Long entryId) {
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(
                         String.format("Entry with %d not found", entryId),
                         HttpStatus.NOT_FOUND));
 
-        if(!entry.getUser().equals(user)){
+        if (!entry.getUser().equals(user)) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
@@ -144,7 +184,7 @@ public class EntryService {
         // Encrypt the updated content
         String encryptedContent = encryptionService.encrypt(details.content());
         logger.debug("Content encrypted for updated entry id: {}", entryId);
-        
+
         entry.setLastEdited(ZonedDateTime.now());
         entry.setContent(encryptedContent);
         entry.setFavorite(details.isFavorite());
@@ -152,12 +192,11 @@ public class EntryService {
         entry.setWordCount(details.wordCount());
 
         entryRepository.save(entry);
-        
+
         // Decrypt for the response
         entry.setContent(details.content()); // Use original content for response
         return entry;
     }
-
 
     public List<Entry> getEntriesByYearAndMonth(User user, LocalDate date) {
         if (date.isAfter(LocalDate.now())) {
@@ -182,14 +221,40 @@ public class EntryService {
         return entries;
     }
 
+    public Map<LocalDate, List<Long>> getEntryIdsByTimeRange(User user, LocalDate startDate, LocalDate endDate) {
+        if (startDate.isAfter(endDate)) {
+            throw new ApplicationException("Start date cannot be after end date", HttpStatus.BAD_REQUEST);
+        }
 
-    public Entry addTags(User user, Long entryId,Set<Tag> tags){
+        ZoneId zoneId = ZoneId.systemDefault();
+
+        ZonedDateTime startDateTime = startDate.atStartOfDay(zoneId);
+        ZonedDateTime endDateTime = endDate.atTime(23, 59, 59).atZone(zoneId);
+
+        List<Entry> entries = entryRepository.findByDateCreatedBetweenAndUser(startDateTime, endDateTime, user);
+
+        if (entries == null || entries.isEmpty()) {
+            throw new ApplicationException(
+                    String.format("No entries found between %s and %s",
+                            startDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                            endDate.format(DateTimeFormatter.ISO_LOCAL_DATE)),
+                    HttpStatus.NOT_FOUND);
+        }
+
+        return entries.stream()
+                .collect(Collectors.groupingBy(
+                        entry -> entry.getDateCreated().toLocalDate(),
+                        Collectors.mapping(Entry::getId, Collectors.toList())));
+
+    }
+
+    public Entry addTags(User user, Long entryId, Set<Tag> tags) {
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(
                         String.format("Entry with %d not found", entryId),
                         HttpStatus.NOT_FOUND));
 
-        if(!entry.getUser().equals(user)){
+        if (!entry.getUser().equals(user)) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
@@ -199,94 +264,18 @@ public class EntryService {
         return entry;
     }
 
-
-    //Fetching Entry
-    public Entry verifyUserOwnsEntry(User user, Long entryId){
+    // Fetching Entry
+    public void verifyUserOwnsEntry(User user, Long entryId) {
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(
                         String.format("Entry with %d not found", entryId),
                         HttpStatus.NOT_FOUND));
 
-        if(!entry.getUser().equals(user)){
+        if (!entry.getUser().equals(user)) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
         }
-        return entry;
     }
 
-    public void addEntryToFolder(User user, Long entryId, Long folderId) {
-        Entry entry = verifyUserOwnsEntry(user, entryId);
-        Folder folder = folderService.getFolder(user, folderId);
-
-        entry.setFolder(folder);
-        entryRepository.save(entry);
-    }
-
-    public void removeEntryFromFolder(User user,
-                                      Long entryId) {
-        Entry entry = verifyUserOwnsEntry(user, entryId);
-        entry.setFolder(null);
-        entryRepository.save(entry);
-    }
-
-    public List<Entry> getAllEntriesFromFolder(User user, Long folderId) {
-        Folder folder = folderService.getFolder(user, folderId);
-
-        return entryRepository.findAllByFolder(folder);
-    }
-
-    public String uploadMedia(User user, Long entryId, MultipartFile file, MediaType mediaType) {
-        Entry entry = getEntryById(user, entryId);
-
-        // Upload file to S3 with private access
-        String s3Key = s3Service.uploadFile(file, mediaType);
-
-        //Store the permanent URL in the database
-        String s3Url = "https://diamond-diaries-media.s3.amazonaws.com/" + s3Key;
-
-        // Generate the presigned URL
-        String presignedUrl = s3Service.generatePresignedUrl(s3Key);
-
-        // Save media record with S3 key and URL
-        Media media = new Media();
-        media.setEntry(entry);
-        media.setMediaType(mediaType);
-        media.setS3Key(s3Key);
-        media.setUrl(s3Url);
-        mediaRepository.save(media);
-
-        return presignedUrl;
-    }
-
-    // Get all media for an entry with secure URLs
-    public List<MediaResponse> getMediaByEntryId(Long entryId) {
-        List<Media> mediaList = mediaRepository.findAllByEntryId(entryId);
-
-        return mediaList.stream()
-                .map(media -> {
-                    // Generate a fresh pre-signed URL for each media item
-                    String presignedUrl = s3Service.generatePresignedUrl(media.getS3Key());
-                    return new MediaResponse(media, presignedUrl);
-                })
-                .collect(Collectors.toList());
-    }
-
-    // Delete media securely
-    public void deleteMedia(Long mediaId, Long entryId) {
-        Media media = mediaRepository.findById(mediaId)
-                .orElseThrow(() -> new ApplicationException("Media not found", HttpStatus.NOT_FOUND));
-
-        // Verify the media belongs to the specified entry
-        if (!media.getEntry().getId().equals(entryId)) {
-            throw new ApplicationException("Media does not belong to the specified entry", HttpStatus.BAD_REQUEST);
-        }
-
-        // Delete from S3 using the S3 key
-        s3Service.deleteFile(media.getS3Key());
-
-        // Remove from database
-        mediaRepository.delete(media);
-    }
-    
 }

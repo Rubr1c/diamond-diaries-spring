@@ -1,11 +1,12 @@
 package dev.rubric.journalspring.service;
 
-
 import dev.rubric.journalspring.dto.LoginUserDto;
 import dev.rubric.journalspring.dto.RegisterUserDto;
 import dev.rubric.journalspring.dto.VerifyUserDto;
 import dev.rubric.journalspring.exception.ApplicationException;
+import dev.rubric.journalspring.models.Entry;
 import dev.rubric.journalspring.models.User;
+import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,12 +14,16 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -39,6 +44,9 @@ public class AuthServiceUnitTests {
 
     @Mock
     private MailService mailService;
+
+    @Mock
+    private EntryRepository entryRepository;
 
     @InjectMocks
     private AuthService authService;
@@ -76,7 +84,6 @@ public class AuthServiceUnitTests {
                 null,
                 "P@ssword1");
 
-
         ApplicationException exception = assertThrows(ApplicationException.class, () -> {
             authService.signup(input);
         });
@@ -92,7 +99,6 @@ public class AuthServiceUnitTests {
                 "test@example.com",
                 "P@ssword1");
 
-
         ApplicationException exception = assertThrows(ApplicationException.class, () -> {
             authService.signup(input);
         });
@@ -101,14 +107,12 @@ public class AuthServiceUnitTests {
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
     }
 
-
     @Test
     void signup_NullPassword() {
         RegisterUserDto input = new RegisterUserDto(
                 "test",
                 "test@example.com",
                 null);
-
 
         ApplicationException exception = assertThrows(ApplicationException.class, () -> {
             authService.signup(input);
@@ -125,7 +129,6 @@ public class AuthServiceUnitTests {
                 null,
                 null);
 
-
         ApplicationException exception = assertThrows(ApplicationException.class, () -> {
             authService.signup(input);
         });
@@ -139,8 +142,7 @@ public class AuthServiceUnitTests {
         RegisterUserDto input = new RegisterUserDto(
                 "test",
                 "test123",
-                "P@ssword1"
-        );
+                "P@ssword1");
 
         ApplicationException exception = assertThrows(ApplicationException.class, () -> {
             authService.signup(input);
@@ -155,8 +157,7 @@ public class AuthServiceUnitTests {
         RegisterUserDto input = new RegisterUserDto(
                 "te",
                 "test@example.com",
-                "P@ssword1"
-        );
+                "P@ssword1");
 
         ApplicationException exception = assertThrows(ApplicationException.class, () -> {
             authService.signup(input);
@@ -171,8 +172,7 @@ public class AuthServiceUnitTests {
         RegisterUserDto input = new RegisterUserDto(
                 "testestestetsetsestestestetsets",
                 "test@example.com",
-                "P@ssword1"
-        );
+                "P@ssword1");
 
         ApplicationException exception = assertThrows(ApplicationException.class, () -> {
             authService.signup(input);
@@ -187,8 +187,7 @@ public class AuthServiceUnitTests {
         RegisterUserDto input = new RegisterUserDto(
                 "test",
                 "test@example.com",
-                "P@swrd1"
-        );
+                "P@swrd1");
 
         ApplicationException exception = assertThrows(ApplicationException.class, () -> {
             authService.signup(input);
@@ -203,8 +202,7 @@ public class AuthServiceUnitTests {
         RegisterUserDto input = new RegisterUserDto(
                 "test",
                 "test@example.com",
-                "p@ssword1"
-        );
+                "p@ssword1");
 
         ApplicationException exception = assertThrows(ApplicationException.class, () -> {
             authService.signup(input);
@@ -219,8 +217,7 @@ public class AuthServiceUnitTests {
         RegisterUserDto input = new RegisterUserDto(
                 "test",
                 "test@example.com",
-                "P@SSWORD1"
-        );
+                "P@SSWORD1");
 
         ApplicationException exception = assertThrows(ApplicationException.class, () -> {
             authService.signup(input);
@@ -235,8 +232,7 @@ public class AuthServiceUnitTests {
         RegisterUserDto input = new RegisterUserDto(
                 "test",
                 "test@example.com",
-                "p@ssword"
-        );
+                "p@ssword");
 
         ApplicationException exception = assertThrows(ApplicationException.class, () -> {
             authService.signup(input);
@@ -251,8 +247,7 @@ public class AuthServiceUnitTests {
         RegisterUserDto input = new RegisterUserDto(
                 "test",
                 "test@example.com",
-                "Password1"
-        );
+                "Password1");
 
         ApplicationException exception = assertThrows(ApplicationException.class, () -> {
             authService.signup(input);
@@ -270,8 +265,7 @@ public class AuthServiceUnitTests {
         RegisterUserDto input = new RegisterUserDto(
                 "test",
                 "test@example.com",
-                "P@ssword1"
-        );
+                "P@ssword1");
 
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
 
@@ -294,22 +288,76 @@ public class AuthServiceUnitTests {
         User mockUser = new User();
         mockUser.setEmail(email);
         mockUser.setActivated(true);
+        mockUser.setStreak(5);
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(mockUser));
+        when(entryRepository.findAllByUserOrderByJournalDateDesc(eq(mockUser), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of()));
 
-        ArgumentCaptor<UsernamePasswordAuthenticationToken> authCaptor =
-                ArgumentCaptor.forClass(UsernamePasswordAuthenticationToken.class);
+        ArgumentCaptor<UsernamePasswordAuthenticationToken> authCaptor = ArgumentCaptor
+                .forClass(UsernamePasswordAuthenticationToken.class);
 
         User authenticatedUser = authService.authenticate(input);
 
         assertNotNull(authenticatedUser);
         assertEquals(email, authenticatedUser.getEmail());
+        assertEquals(5, authenticatedUser.getStreak());
 
         verify(authenticationManager).authenticate(authCaptor.capture());
         UsernamePasswordAuthenticationToken capturedAuth = authCaptor.getValue();
 
         assertEquals(email, capturedAuth.getPrincipal());
         assertEquals(password, capturedAuth.getCredentials());
+    }
+
+    @Test
+    void authenticate_StreakResetAfterInactivity() {
+        String email = "test@example.com";
+        String password = "P@ssword1";
+        LoginUserDto input = new LoginUserDto(email, password);
+
+        User mockUser = new User();
+        mockUser.setEmail(email);
+        mockUser.setActivated(true);
+        mockUser.setStreak(5);
+
+        Entry lastEntry = new Entry();
+        lastEntry.setJournalDate(LocalDate.now().minusDays(3));
+
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(mockUser));
+        when(entryRepository.findAllByUserOrderByJournalDateDesc(eq(mockUser), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of(lastEntry)));
+
+        User authenticatedUser = authService.authenticate(input);
+
+        assertNotNull(authenticatedUser);
+        assertEquals(0, authenticatedUser.getStreak());
+        verify(userRepository).save(mockUser);
+    }
+
+    @Test
+    void authenticate_MaintainStreakWithRecentEntry() {
+        String email = "test@example.com";
+        String password = "P@ssword1";
+        LoginUserDto input = new LoginUserDto(email, password);
+
+        User mockUser = new User();
+        mockUser.setEmail(email);
+        mockUser.setActivated(true);
+        mockUser.setStreak(5);
+
+        Entry lastEntry = new Entry();
+        lastEntry.setJournalDate(LocalDate.now().minusDays(1));
+
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(mockUser));
+        when(entryRepository.findAllByUserOrderByJournalDateDesc(eq(mockUser), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of(lastEntry)));
+
+        User authenticatedUser = authService.authenticate(input);
+
+        assertNotNull(authenticatedUser);
+        assertEquals(5, authenticatedUser.getStreak());
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
@@ -472,7 +520,6 @@ public class AuthServiceUnitTests {
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
     }
 
-
     @Test
     void resendVerificationCode_Success() {
         String email = "test@example.com";
@@ -501,7 +548,8 @@ public class AuthServiceUnitTests {
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
 
-        ApplicationException exception = assertThrows(ApplicationException.class, () -> authService.resendVerificationCode(email));
+        ApplicationException exception = assertThrows(ApplicationException.class,
+                () -> authService.resendVerificationCode(email));
         assertEquals("Account is already verified", exception.getMessage());
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
     }

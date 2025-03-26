@@ -5,10 +5,14 @@ import dev.rubric.journalspring.dto.RegisterUserDto;
 import dev.rubric.journalspring.dto.UpdatePasswordDto;
 import dev.rubric.journalspring.dto.VerifyUserDto;
 import dev.rubric.journalspring.exception.ApplicationException;
+import dev.rubric.journalspring.models.Entry;
 import dev.rubric.journalspring.models.User;
+import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,6 +20,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -27,6 +33,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final MailService mailService;
+    private final EntryRepository entryRepository;
 
     public void initiatePasswordReset(String email) {
         User user = userRepository.findByEmail(email)
@@ -70,12 +77,15 @@ public class AuthService {
         String htmlMessage = "<html>" +
                 "<head>" +
                 "  <style>" +
-                "    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fafafa; margin: 0; padding: 0; }" +
-                "    .container { max-width: 600px; margin: 50px auto; background-color: #ffffff; padding: 30px; border: 1px solid #eaeaea; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }" +
+                "    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fafafa; margin: 0; padding: 0; }"
+                +
+                "    .container { max-width: 600px; margin: 50px auto; background-color: #ffffff; padding: 30px; border: 1px solid #eaeaea; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }"
+                +
                 "    .header { text-align: center; padding-bottom: 20px; }" +
                 "    .header h1 { margin: 0; color: #333333; }" +
                 "    .content { color: #555555; font-size: 16px; line-height: 1.5; }" +
-                "    .verification-code { display: inline-block; margin: 20px 0; padding: 10px 20px; background-color: #007bff; color: #ffffff; font-size: 20px; font-weight: bold; border-radius: 5px; }" +
+                "    .verification-code { display: inline-block; margin: 20px 0; padding: 10px 20px; background-color: #007bff; color: #ffffff; font-size: 20px; font-weight: bold; border-radius: 5px; }"
+                +
                 "    .footer { text-align: center; font-size: 12px; color: #999999; padding-top: 20px; }" +
                 "  </style>" +
                 "</head>" +
@@ -108,11 +118,13 @@ public class AuthService {
             UserRepository userRepository,
             AuthenticationManager authenticationManager,
             PasswordEncoder passwordEncoder,
-            MailService mailService) {
+            MailService mailService,
+            EntryRepository entryRepository) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.mailService = mailService;
+        this.entryRepository = entryRepository;
     }
 
     private boolean passwordIsValid(String password) {
@@ -189,6 +201,10 @@ public class AuthService {
         } catch (Exception e) {
             throw new ApplicationException("Invalid credentials", HttpStatus.UNAUTHORIZED);
         }
+
+        // Check if it's been more than 2 days since last entry and reset streak if
+        // needed
+        checkAndResetStreakIfNeeded(user);
 
         if (user.isEnabled2fa()) {
             user.setVerificationCode(generateVerificationCode());
@@ -362,5 +378,32 @@ public class AuthService {
         Random random = new Random();
         int code = random.nextInt(900000) + 100000;
         return String.valueOf(code);
+    }
+
+    /**
+     * Checks if it's been more than 2 days since the user's last entry and resets
+     * their streak to 0 if that's the case.
+     */
+    private void checkAndResetStreakIfNeeded(User user) {
+        LocalDate today = LocalDate.now();
+
+        // Find the most recent entry for this user
+        PageRequest pageRequest = PageRequest.of(0, 1, Sort.by(Sort.Direction.DESC, "journalDate"));
+        List<Entry> recentEntries = entryRepository.findAllByUserOrderByJournalDateDesc(user, pageRequest).getContent();
+
+        if (recentEntries.isEmpty()) {
+            // If no entries, no need to reset streak
+            return;
+        }
+
+        LocalDate lastEntryDate = recentEntries.get(0).getJournalDate();
+
+        // If it's been more than 2 days since the last entry, reset streak to 0
+        if (today.isAfter(lastEntryDate.plusDays(2))) {
+            logger.info("Resetting streak to 0 for user {} due to inactivity. Last entry was on {}",
+                    user.getId(), lastEntryDate);
+            user.setStreak(0);
+            userRepository.save(user);
+        }
     }
 }
