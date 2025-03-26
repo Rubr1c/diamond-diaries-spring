@@ -16,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.metrics.StartupStep.Tags;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
@@ -157,7 +158,18 @@ public class EntryService {
 
         return entries;
     }
+    public List<Entry> getUserEntriesbyTags(User user, Set<Tag> tags, int offset, int count){
+        PageRequest pageRequest = PageRequest.of(offset, count, Sort.by(Sort.Direction.DESC, "journalDate"));
+        List<Entry> entries = entryRepository.findByUserAndTags(user, tags, pageRequest).getContent();
+        entries.forEach(entry -> {
+            String decryptedContent = encryptionService.decrypt(entry.getContent());
+            entry.setContent(decryptedContent);
+        });
 
+        logger.debug("Decrypted content for {} entries", entries.size());
+        
+        return entries;
+    }
     public void deleteEntry(User user, Long entryId) {
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(

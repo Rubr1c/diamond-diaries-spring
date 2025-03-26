@@ -4,7 +4,8 @@
     import dev.rubric.journalspring.dto.EntryDto;
     import dev.rubric.journalspring.enums.MediaType;
     import dev.rubric.journalspring.exception.ApplicationException;
-    import dev.rubric.journalspring.models.User;
+import dev.rubric.journalspring.models.Tag;
+import dev.rubric.journalspring.models.User;
     import dev.rubric.journalspring.response.EntryResponse;
     import dev.rubric.journalspring.response.MediaResponse;
     import dev.rubric.journalspring.service.EntryService;
@@ -13,12 +14,14 @@
     import org.slf4j.LoggerFactory;
     import org.springframework.http.HttpStatus;
     import org.springframework.http.ResponseEntity;
-    import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
     import org.springframework.web.multipart.MultipartFile;
 
     import java.time.LocalDate;
     import java.util.List;
-    import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.stream.Collectors;
 
     import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
 
@@ -73,6 +76,23 @@
 
             return ResponseEntity.ok(entries);
         }
+        @GetMapping("/tag")
+        public ResponseEntity<List<EntryResponse>> getAllUserEntriesByTags
+        (@AuthenticationPrincipal User user, @RequestBody Set<Tag> tags, @RequestParam int offset,
+         @RequestParam int size){
+            
+            logger.info("User {} is requesting all journal entries", user.getId());
+
+            List<EntryResponse> entries = entryService.getUserEntriesbyTags(user, tags, offset, size)
+                    .stream()
+                    .map(EntryResponse::new)
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(entries);
+        }
+
+
+
 
         @PostMapping("/new")
         public ResponseEntity<String> addEntry(@RequestBody EntryDto entryDto){
@@ -82,7 +102,13 @@
             entryService.addEntry(user, entryDto);
             return ResponseEntity.status(HttpStatus.CREATED).body("Entry created successfully");
         }
-
+        @PostMapping("/{entryId}/tag/new")
+        public ResponseEntity<String> addTagsToEntry(@AuthenticationPrincipal User user, @PathVariable Long entryId,
+        @RequestBody Set<Tag> tags)
+        {
+            entryService.addTags(user, entryId, tags);
+            return ResponseEntity.ok("Added tags to entry");
+        }
         @PutMapping("/{id}/update")
         public ResponseEntity<EntryResponse> updateEntry(@RequestBody EntryDto entryDto, @PathVariable Long id){
             User user = authUtil.getAuthenticatedUser();
