@@ -63,8 +63,6 @@ public class EntryService {
         entryRepository.save(entry);
         logger.info("Entry with id {} created for user {}", entry.getId(), user.getId());
 
-        // Decrypt for the response
-        entry.setContent(details.content()); // Use original content for response
         return entry;
     }
 
