@@ -4,10 +4,7 @@ import dev.rubric.journalspring.config.S3Service;
 import dev.rubric.journalspring.dto.EntryDto;
 import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
-import dev.rubric.journalspring.models.Entry;
-import dev.rubric.journalspring.models.Media;
-import dev.rubric.journalspring.models.Tag;
-import dev.rubric.journalspring.models.User;
+import dev.rubric.journalspring.models.*;
 import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.MediaRepository;
 import dev.rubric.journalspring.repository.UserRepository;
@@ -334,6 +331,27 @@ public class EntryService {
 
         // Remove from database
         mediaRepository.delete(media);
+    }
+
+    public void addEntryToFolder(User user, Long entryId, Long folderId) {
+        Entry entry = verifyUserOwnsEntry(user, entryId);
+        Folder folder = folderService.getFolder(user, folderId);
+
+        entry.setFolder(folder);
+        entryRepository.save(entry);
+    }
+
+    public void removeEntryFromFolder(User user,
+                                      Long entryId) {
+        Entry entry = verifyUserOwnsEntry(user, entryId);
+        entry.setFolder(null);
+        entryRepository.save(entry);
+    }
+
+    public List<Entry> getAllEntriesFromFolder(User user, Long folderId) {
+        Folder folder = folderService.getFolder(user, folderId);
+
+        return entryRepository.findAllByFolder(folder);
     }
 
 
