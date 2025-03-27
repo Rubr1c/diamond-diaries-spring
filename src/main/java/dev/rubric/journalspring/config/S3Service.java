@@ -35,6 +35,7 @@ public class S3Service {
     @Value("${aws.s3.url-expiration:15}")
     private int urlExpirationMinutes;
 
+
     public S3Service(@Value("${aws.accessKeyId}") String accessKey,
                      @Value("${aws.secretAccessKey}") String secretKey) {
         Region region = Region.US_EAST_1;
@@ -51,6 +52,7 @@ public class S3Service {
                 .credentialsProvider(credentialsProvider)
                 .build();
     }
+
 
     /**
      * Upload profile picture (public access)
@@ -86,11 +88,17 @@ public class S3Service {
      */
     public String uploadFile(MultipartFile file, MediaType mediaType) {
         try {
-            String folder = switch (mediaType) {
-                case IMAGE -> "photos/";
-                case VIDEO -> "videos/";
-                default -> "files/";
-            };
+            String folder;
+            if (mediaType == null) {
+                folder = "files/";
+            } else {
+                folder = switch (mediaType) {
+                    case IMAGE -> "photos/";
+                    case VIDEO -> "videos/";
+                    default -> "files/";
+                };
+            }
+
 
             String key = folder + UUID.randomUUID() + "-" + file.getOriginalFilename();
 
