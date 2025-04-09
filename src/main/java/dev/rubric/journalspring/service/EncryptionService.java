@@ -30,6 +30,9 @@ public class EncryptionService {
     @Value("${encryption.salt}")
     private String salt;
 
+    @Value("${encryption.token.secret:defaultTokenSecret}")
+    private String tokenSecret;
+
     /**
      * Encrypts the given text using AES encryption
      * 
@@ -121,5 +124,16 @@ public class EncryptionService {
                 KEY_LENGTH);
         SecretKey tmp = factory.generateSecret(spec);
         return new SecretKeySpec(tmp.getEncoded(), "AES");
+    }
+
+    /**
+     * Gets the token encryption key for use by the TokenGeneratorService
+     * This uses a separate key from the main content encryption for security
+     * separation
+     * 
+     * @return The token encryption key
+     */
+    public String getTokenEncryptionKey() {
+        return tokenSecret;
     }
 }
