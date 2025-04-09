@@ -38,16 +38,23 @@ public class EntryService {
     private final UserRepository userRepository;
     private final S3Service s3Service;
     private final FolderService folderService;
+    private final SearchService searchService;
 
     @Autowired
-    public EntryService(EntryRepository entryRepository, EncryptionService encryptionService,
-                        MediaRepository mediaRepository, UserRepository userRepository, S3Service s3Service , FolderService folderService) {
+    public EntryService(
+            EntryRepository entryRepository,
+            EncryptionService encryptionService,
+            MediaRepository mediaRepository,
+            FolderService folderService,
+            S3Service s3Service,
+            SearchService searchService) {
         this.entryRepository = entryRepository;
         this.encryptionService = encryptionService;
         this.mediaRepository = mediaRepository;
         this.userRepository = userRepository;
         this.s3Service = s3Service;
         this.folderService = folderService;
+        this.searchService = searchService;
     }
 
     public Entry addEntry(User user, EntryDto details) {
@@ -68,6 +75,13 @@ public class EntryService {
 
         entryRepository.save(entry);
         logger.info("Entry with id {} created for user {}", entry.getId(), user.getId());
+
+        // Index the entry for searching
+        searchService.indexEntry(entry, details.content());
+        logger.debug("Entry indexed for search");
+
+        // Decrypt for the response
+        entry.setContent(details.content()); // Use original content for response
 
         return entry;
     }
@@ -170,6 +184,10 @@ public class EntryService {
                     HttpStatus.UNAUTHORIZED);
         }
 
+        // Remove search tokens before deleting the entry
+        searchService.removeEntryTokens(entry);
+        logger.debug("Search tokens removed for entry {}", entryId);
+
         entryRepository.deleteById(entryId);
     }
 
@@ -197,6 +215,11 @@ public class EntryService {
 
         entryRepository.save(entry);
 
+
+        // Update search tokens for the entry
+        searchService.indexEntry(entry, details.content());
+        logger.debug("Search tokens updated for entry {}", entryId);
+
         // Decrypt for the response
         entry.setContent(details.content()); // Use original content for response
         return entry;
@@ -222,8 +245,15 @@ public class EntryService {
                     HttpStatus.NOT_FOUND);
         }
 
+        // Decrypt all entries' content
+        entries.forEach(entry -> {
+            String decryptedContent = encryptionService.decrypt(entry.getContent());
+            entry.setContent(decryptedContent);
+        });
+
         return entries;
     }
+
 
     public Map<LocalDate, List<Long>> getEntryIdsByTimeRange(User user, LocalDate startDate, LocalDate endDate) {
         if (startDate.isAfter(endDate)) {
@@ -252,6 +282,7 @@ public class EntryService {
 
     }
 
+
     public Entry addTags(User user, Long entryId, Set<Tag> tags) {
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(
@@ -265,7 +296,24 @@ public class EntryService {
         }
         entry.addTags(tags);
         entryRepository.save(entry);
+
+        // Re-index the entry after adding tags
+        String decryptedContent = encryptionService.decrypt(entry.getContent());
+        searchService.indexEntry(entry, decryptedContent);
+
         return entry;
+    }
+
+
+    /**
+     * Search for entries matching the query
+     * 
+     * @param user  The user performing the search
+     * @param query The search query
+     * @return List of entries matching the query
+     */
+    public List<Entry> searchEntries(User user, String query) {
+        return searchService.search(user, query);
     }
 
     // Fetching Entry
@@ -283,13 +331,29 @@ public class EntryService {
 
         return entry;
     }
+
+    public void addEntryToFolder(User user, Long entryId, Long folderId) {
+        Entry entry = verifyUserOwnsEntry(user, entryId);
+        Folder folder = folderService.getFolder(user, folderId);
+
+        entry.setFolder(folder);
+        entryRepository.save(entry);
+    }
+
+    public void removeEntryFromFolder(User user,
+            Long entryId) {
+        Entry entry = verifyUserOwnsEntry(user, entryId);
+        entry.setFolder(null);
+        entryRepository.save(entry);
+    }
+
     public String uploadMedia(User user, Long entryId, MultipartFile file, MediaType mediaType) {
         Entry entry = getEntryById(user, entryId);
 
         // Upload file to S3 with private access
         String s3Key = s3Service.uploadFile(file, mediaType);
 
-        //Store the permanent URL in the database
+        // Store the permanent URL in the database
         String s3Url = "https://diamond-diaries-media.s3.amazonaws.com/" + s3Key;
 
         // Generate the presigned URL
@@ -335,6 +399,7 @@ public class EntryService {
         // Remove from database
         mediaRepository.delete(media);
     }
+
 
     public void addEntryToFolder(User user, Long entryId, Long folderId) {
         Entry entry = verifyUserOwnsEntry(user, entryId);
