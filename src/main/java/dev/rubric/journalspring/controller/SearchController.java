@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/v1/search")
+@RequestMapping("/api/v1/entry/search")
 public class SearchController {
     private static final Logger logger = LoggerFactory.getLogger(SearchController.class);
     private final EntryService entryService;
