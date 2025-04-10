@@ -1,6 +1,6 @@
 package dev.rubric.journalspring.service;
 
-import dev.rubric.journalspring.config.S3Service;
+import dev.rubric.journalspring.service.S3Service;
 import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
 import org.junit.jupiter.api.BeforeEach;

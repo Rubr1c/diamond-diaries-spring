@@ -7,6 +7,7 @@ import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.response.EntryResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,55 +27,66 @@ public class EntryServiceUnitTests {
     @Mock
     EncryptionService encryptionService;
 
+    @Mock
+    SearchService searchService;
 
     @InjectMocks
     EntryService entryService;
 
     @Test
     void addEntry_Success(){
+        // --- Arrange ---
         User mockUser = new User();
         mockUser.setId(1L);
 
-        Folder mockFolder = new Folder(
-                mockUser,
-                "testFolder"
-        );
-
+        Folder mockFolder = new Folder(mockUser, "testFolder");
         Tag testTag = new Tag("testTag");
         Set<Tag> tags = Set.of(testTag);
+        String originalContent = "testContent";
 
         EntryDto entryDto = new EntryDto(
                 "testTitle",
                 mockFolder,
-                "testContent",
+                originalContent,
                 tags,
                 1,
                 true
         );
 
-        Entry savedEntry = new Entry(
-                mockUser,
-                entryDto.folder(),
-                entryDto.title(),
-                entryDto.content(),
-                entryDto.tags(),
-                entryDto.wordCount()
-        );
-        savedEntry.setPublicId(UUID.randomUUID());
+        String expectedEncryptedContent = "encryptedSuccessContent"; // Define expected encrypted content
 
-        when(entryRepository.save(any(Entry.class))).
-                thenReturn(savedEntry);
+        // Mock dependencies
+        when(encryptionService.encrypt(originalContent)).thenReturn(expectedEncryptedContent);
+        // Mock search service (important for void methods)
+        doNothing().when(searchService).indexEntry(any(Entry.class), eq(originalContent));
+        // Mock repository save - not strictly necessary to mock the return for void,
+        // but good practice if other parts rely on it returning the saved entity.
+        // when(entryRepository.save(any(Entry.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Entry response = entryService.addEntry(mockUser, entryDto);
+        // --- Act ---
+        entryService.addEntry(mockUser, entryDto); // Call the void method
 
-        verify(entryRepository, times(1))
-                .save(any(Entry.class));
+        // --- Assert ---
+        // Verify interactions and capture the saved entry
+        verify(encryptionService, times(1)).encrypt(originalContent);
 
-        assertNotNull(response);
-        assertNotNull(response.getPublicId());
-        assertEquals("testTitle", response.getTitle());
-        assertEquals("testContent", response.getContent());
-        assertEquals(1, response.getWordCount());
+        ArgumentCaptor<Entry> entryCaptor = ArgumentCaptor.forClass(Entry.class);
+        verify(entryRepository, times(1)).save(entryCaptor.capture());
+
+        // Verify searchService interaction with the *captured* entry and *original* content
+        verify(searchService, times(1)).indexEntry(eq(entryCaptor.getValue()), eq(originalContent));
+
+        // Assertions on the captured entry that was saved
+        Entry savedEntry = entryCaptor.getValue();
+        assertNotNull(savedEntry);
+        assertNotNull(savedEntry.getPublicId()); // UUID should be set in the Entry constructor
+        assertEquals("testTitle", savedEntry.getTitle());
+        assertEquals(expectedEncryptedContent, savedEntry.getContent()); // Check ENCRYPTED content was saved
+        assertEquals(1, savedEntry.getWordCount());
+        assertEquals(mockUser, savedEntry.getUser());
+        assertEquals(mockFolder, savedEntry.getFolder().orElse(null));
+        assertTrue(savedEntry.getTags().contains(testTag));
+        // Removed assertions checking the 'response' variable
     }
 
     @Test

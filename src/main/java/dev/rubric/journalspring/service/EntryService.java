@@ -74,8 +74,6 @@ public class EntryService {
         searchService.indexEntry(entry, details.content());
         logger.debug("Entry indexed for search");
 
-        // Decrypt for the response
-        entry.setContent(details.content()); // Use original content for response
         return entry;
     }
 
