@@ -1,13 +1,13 @@
 package dev.rubric.journalspring.service;
 
-import dev.rubric.journalspring.config.S3Service;
+import dev.rubric.journalspring.service.S3Service;
 import dev.rubric.journalspring.dto.EntryDto;
 import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.*;
 import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.MediaRepository;
-import dev.rubric.journalspring.repository.UserRepository;
+import dev.rubric.journalspring.response.EntryResponse;
 import dev.rubric.journalspring.response.MediaResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,10 +22,9 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -35,9 +34,8 @@ public class EntryService {
     private final EntryRepository entryRepository;
     private final EncryptionService encryptionService;
     private final MediaRepository mediaRepository;
-    private final UserRepository userRepository;
-    private final S3Service s3Service;
     private final FolderService folderService;
+    private final S3Service s3Service;
     private final SearchService searchService;
 
     @Autowired
@@ -51,16 +49,12 @@ public class EntryService {
         this.entryRepository = entryRepository;
         this.encryptionService = encryptionService;
         this.mediaRepository = mediaRepository;
-        this.userRepository = userRepository;
         this.s3Service = s3Service;
         this.folderService = folderService;
         this.searchService = searchService;
     }
 
     public Entry addEntry(User user, EntryDto details) {
-        // Update user streak based on entry dates
-        updateUserStreak(user);
-
         // Encrypt the content before saving
         String encryptedContent = encryptionService.encrypt(details.content());
         logger.debug("Content encrypted for new entry");
@@ -82,45 +76,7 @@ public class EntryService {
 
         // Decrypt for the response
         entry.setContent(details.content()); // Use original content for response
-
         return entry;
-    }
-
-    /**
-     * Updates the user's streak based on the date of their most recent entry.
-     * - If the new entry is one day after the previous entry: increment streak
-     * - If the new entry is on the same day as the previous entry: do nothing
-     * Note: Streak reset logic (for gaps > 1 day) is handled in AuthService when
-     * the user logs in
-     */
-    private void updateUserStreak(User user) {
-        LocalDate today = LocalDate.now();
-
-        // Find the most recent entry for this user
-        List<Entry> recentEntries = entryRepository.findAllByUserOrderByJournalDateDesc(user, PageRequest.of(0, 1))
-                .getContent();
-
-        if (recentEntries.isEmpty()) {
-            // This is the user's first entry, set streak to 1
-            user.setStreak(1);
-            userRepository.save(user);
-            logger.info("First entry for user {}, set streak to 1", user.getId());
-            return;
-        }
-
-        LocalDate lastEntryDate = recentEntries.get(0).getJournalDate();
-
-        if (today.equals(lastEntryDate)) {
-            // Entry created on the same day, do nothing with streak
-            logger.debug("Entry created on same day for user {}, streak remains {}", user.getId(), user.getStreak());
-        } else if (today.equals(lastEntryDate.plusDays(1))) {
-            // Entry created exactly one day after the previous entry, increment streak
-            Integer newStreak = user.getStreak() + 1;
-            user.setStreak(newStreak);
-            userRepository.save(user);
-            logger.info("Incremented streak for user {} to {}", user.getId(), newStreak);
-        }
-        // Note: We don't handle the reset case here as it's now done in AuthService
     }
 
     public Entry getEntryById(User user, Long entryId) {
@@ -215,7 +171,6 @@ public class EntryService {
 
         entryRepository.save(entry);
 
-
         // Update search tokens for the entry
         searchService.indexEntry(entry, details.content());
         logger.debug("Search tokens updated for entry {}", entryId);
@@ -254,35 +209,6 @@ public class EntryService {
         return entries;
     }
 
-
-    public Map<LocalDate, List<Long>> getEntryIdsByTimeRange(User user, LocalDate startDate, LocalDate endDate) {
-        if (startDate.isAfter(endDate)) {
-            throw new ApplicationException("Start date cannot be after end date", HttpStatus.BAD_REQUEST);
-        }
-
-        ZoneId zoneId = ZoneId.systemDefault();
-
-        ZonedDateTime startDateTime = startDate.atStartOfDay(zoneId);
-        ZonedDateTime endDateTime = endDate.atTime(23, 59, 59).atZone(zoneId);
-
-        List<Entry> entries = entryRepository.findByDateCreatedBetweenAndUser(startDateTime, endDateTime, user);
-
-        if (entries == null || entries.isEmpty()) {
-            throw new ApplicationException(
-                    String.format("No entries found between %s and %s",
-                            startDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
-                            endDate.format(DateTimeFormatter.ISO_LOCAL_DATE)),
-                    HttpStatus.NOT_FOUND);
-        }
-
-        return entries.stream()
-                .collect(Collectors.groupingBy(
-                        entry -> entry.getDateCreated().toLocalDate(),
-                        Collectors.mapping(Entry::getId, Collectors.toList())));
-
-    }
-
-
     public Entry addTags(User user, Long entryId, Set<Tag> tags) {
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(
@@ -304,10 +230,9 @@ public class EntryService {
         return entry;
     }
 
-
     /**
      * Search for entries matching the query
-     * 
+     *
      * @param user  The user performing the search
      * @param query The search query
      * @return List of entries matching the query
@@ -328,7 +253,6 @@ public class EntryService {
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
         }
-
         return entry;
     }
 
@@ -345,6 +269,12 @@ public class EntryService {
         Entry entry = verifyUserOwnsEntry(user, entryId);
         entry.setFolder(null);
         entryRepository.save(entry);
+    }
+
+    public List<Entry> getAllEntriesFromFolder(User user, Long folderId) {
+        Folder folder = folderService.getFolder(user, folderId);
+
+        return entryRepository.findAllByFolder(folder);
     }
 
     public String uploadMedia(User user, Long entryId, MultipartFile file, MediaType mediaType) {
@@ -399,28 +329,5 @@ public class EntryService {
         // Remove from database
         mediaRepository.delete(media);
     }
-
-
-    public void addEntryToFolder(User user, Long entryId, Long folderId) {
-        Entry entry = verifyUserOwnsEntry(user, entryId);
-        Folder folder = folderService.getFolder(user, folderId);
-
-        entry.setFolder(folder);
-        entryRepository.save(entry);
-    }
-
-    public void removeEntryFromFolder(User user,
-                                      Long entryId) {
-        Entry entry = verifyUserOwnsEntry(user, entryId);
-        entry.setFolder(null);
-        entryRepository.save(entry);
-    }
-
-    public List<Entry> getAllEntriesFromFolder(User user, Long folderId) {
-        Folder folder = folderService.getFolder(user, folderId);
-
-        return entryRepository.findAllByFolder(folder);
-    }
-
 
 }
