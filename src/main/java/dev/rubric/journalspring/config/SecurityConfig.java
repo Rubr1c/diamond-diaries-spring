@@ -14,7 +14,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import java.util.List;
 
 @Configuration
@@ -48,7 +48,7 @@ public class SecurityConfig {
                     logger.info("Configuring authorization rules");
                     authorize
                             .requestMatchers(
-                                    "/auth/**",
+                                    "/api/v1/auth/**",
                                     "/oauth2/**",
                                     "/login/**",
                                     "/oauth2/authorization/**",
@@ -70,6 +70,10 @@ public class SecurityConfig {
                             })
                             .successHandler(oAuth2LoginSuccessHandler);
                 })
+                .exceptionHandling(exceptions -> exceptions
+                        .defaultAuthenticationEntryPointFor(
+                                (request, response, exception) -> response.sendError(401, "Unauthorized"),
+                                request -> !request.getRequestURI().startsWith("/oauth2")))
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)

@@ -55,11 +55,19 @@ public class User implements UserDetails {
     @Column(name = "profile_picture")
     private String profilePicture = "";
 
+    @Column(name = "ai_allow_title_access", nullable = false)
+    private boolean aiAllowTitleAccess = false;
+    @Column(name = "ai_allow_content_access", nullable = false)
+    private boolean aiAllowContentAccess = false;
+    @Column(name = "ai_cooldown")
+    private LocalDateTime aiCooldown;
+
+
     public User(String googleId,
-            String username,
-            String email,
-            String password,
-            String profilePicture) {
+                String username,
+                String email,
+                String password,
+                String profilePicture) {
         this.googleId = googleId;
         this.username = username;
         this.email = email;
@@ -157,8 +165,8 @@ public class User implements UserDetails {
         this.verificationCode = verificationCode;
     }
 
-    public Optional<Boolean> isActivated() {
-        return Optional.ofNullable(isActivated);
+    public Boolean isActivated() {
+        return isActivated;
     }
 
     public void setActivated(boolean activated) {
@@ -199,5 +207,29 @@ public class User implements UserDetails {
 
     public void setEnabled2fa(Boolean enabled2fa) {
         this.enabled2fa = enabled2fa;
+    }
+
+    public boolean isAiAllowTitleAccess() {
+        return aiAllowTitleAccess;
+    }
+
+    public void setAiAllowTitleAccess(boolean aiAllowTitleAccess) {
+        this.aiAllowTitleAccess = aiAllowTitleAccess;
+    }
+
+    public boolean isAiAllowContentAccess() {
+        return aiAllowContentAccess;
+    }
+
+    public void setAiAllowContentAccess(boolean aiAllowContentAccess) {
+        this.aiAllowContentAccess = aiAllowContentAccess;
+    }
+
+    public LocalDateTime getAiCooldown() {
+        return aiCooldown;
+    }
+
+    public void setAiCooldown(LocalDateTime aiCooldown) {
+        this.aiCooldown = aiCooldown;
     }
 }
