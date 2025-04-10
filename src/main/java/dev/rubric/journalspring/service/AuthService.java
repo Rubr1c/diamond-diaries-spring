@@ -18,8 +18,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -198,6 +198,9 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(
                             input.email(),
                             input.password()));
+
+            user.setLastLogin(ZonedDateTime.now());
+            userRepository.save(user);
         } catch (Exception e) {
             throw new ApplicationException("Invalid credentials", HttpStatus.UNAUTHORIZED);
         }
