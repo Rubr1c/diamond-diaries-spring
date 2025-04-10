@@ -76,14 +76,16 @@ import java.util.stream.Collectors;
 
             return ResponseEntity.ok(entries);
         }
+
         @GetMapping("/tag")
-        public ResponseEntity<List<EntryResponse>> getAllUserEntriesByTags
-        (@AuthenticationPrincipal User user, @RequestBody Set<Tag> tags, @RequestParam int offset,
-         @RequestParam int size){
+        public ResponseEntity<List<EntryResponse>> getAllUserEntriesByTags(@AuthenticationPrincipal User user,
+                                                                           @RequestBody Set<Tag> tags,
+                                                                           @RequestParam int offset,
+                                                                           @RequestParam int size){
             
             logger.info("User {} is requesting all journal entries", user.getId());
 
-            List<EntryResponse> entries = entryService.getUserEntriesbyTags(user, tags, offset, size)
+            List<EntryResponse> entries = entryService.getUserEntriesByTags(user, tags, offset, size)
                     .stream()
                     .map(EntryResponse::new)
                     .collect(Collectors.toList());
@@ -102,13 +104,16 @@ import java.util.stream.Collectors;
             entryService.addEntry(user, entryDto);
             return ResponseEntity.status(HttpStatus.CREATED).body("Entry created successfully");
         }
+
         @PostMapping("/{entryId}/tag/new")
-        public ResponseEntity<String> addTagsToEntry(@AuthenticationPrincipal User user, @PathVariable Long entryId,
-        @RequestBody Set<Tag> tags)
+        public ResponseEntity<String> addTagsToEntry(@AuthenticationPrincipal User user,
+                                                     @PathVariable Long entryId,
+                                                     @RequestBody Set<Tag> tags)
         {
             entryService.addTags(user, entryId, tags);
             return ResponseEntity.ok("Added tags to entry");
         }
+
         @PutMapping("/{id}/update")
         public ResponseEntity<EntryResponse> updateEntry(@RequestBody EntryDto entryDto, @PathVariable Long id){
             User user = authUtil.getAuthenticatedUser();

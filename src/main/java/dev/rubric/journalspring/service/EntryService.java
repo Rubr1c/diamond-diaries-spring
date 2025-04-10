@@ -158,7 +158,7 @@ public class EntryService {
 
         return entries;
     }
-    public List<Entry> getUserEntriesbyTags(User user, Set<Tag> tags, int offset, int count){
+    public List<Entry> getUserEntriesByTags(User user, Set<Tag> tags, int offset, int count){
         PageRequest pageRequest = PageRequest.of(offset, count, Sort.by(Sort.Direction.DESC, "journalDate"));
         List<Entry> entries = entryRepository.findByUserAndTags(user, tags, pageRequest).getContent();
         entries.forEach(entry -> {

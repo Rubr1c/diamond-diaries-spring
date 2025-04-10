@@ -17,7 +17,7 @@ import java.util.Set;
 public interface EntryRepository extends CrudRepository<Entry, Long> {
     List<Entry> findAllByUser(User user);
     List<Entry> findByDateCreatedBetweenAndUser(ZonedDateTime startDate, ZonedDateTime endDate, User user);
-    Page<Entry> findAllByUserOrderByJournalDateDesc(User user, Pageable pageable, Tag tag);
+    Page<Entry> findAllByUserOrderByJournalDateDesc(User user, Pageable pageable);
     List<Entry> findAllByFolder(Folder folder);
     @Query("SELECT DISTINCT e FROM Entry e JOIN e.tags t WHERE e.user = :user AND t IN :tags ORDER BY e.journalDate DESC")
     Page<Entry> findByUserAndTags(@Param("user") User user, @Param("tags") Set<Tag> tags, Pageable pageable);
