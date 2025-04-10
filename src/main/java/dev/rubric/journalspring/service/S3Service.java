@@ -1,4 +1,4 @@
-package dev.rubric.journalspring.config;
+package dev.rubric.journalspring.service;
 
 import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;

@@ -1,13 +1,11 @@
 package dev.rubric.journalspring.service;
 
-import dev.rubric.journalspring.config.S3Service;
 import dev.rubric.journalspring.dto.EntryDto;
 import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.*;
 import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.MediaRepository;
-import dev.rubric.journalspring.response.EntryResponse;
 import dev.rubric.journalspring.response.MediaResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +22,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
