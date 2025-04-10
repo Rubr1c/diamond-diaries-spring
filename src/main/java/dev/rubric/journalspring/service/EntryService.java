@@ -1,6 +1,6 @@
 package dev.rubric.journalspring.service;
 
-import dev.rubric.journalspring.config.S3Service;
+import dev.rubric.journalspring.service.S3Service;
 import dev.rubric.journalspring.dto.EntryDto;
 import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
@@ -16,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.metrics.StartupStep.Tags;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
@@ -74,8 +75,6 @@ public class EntryService {
         searchService.indexEntry(entry, details.content());
         logger.debug("Entry indexed for search");
 
-        // Decrypt for the response
-        entry.setContent(details.content()); // Use original content for response
         return entry;
     }
 
@@ -127,7 +126,18 @@ public class EntryService {
 
         return entries;
     }
+    public List<Entry> getUserEntriesByTags(User user, Set<Tag> tags, int offset, int count){
+        PageRequest pageRequest = PageRequest.of(offset, count, Sort.by(Sort.Direction.DESC, "journalDate"));
+        List<Entry> entries = entryRepository.findByUserAndTags(user, tags, pageRequest).getContent();
+        entries.forEach(entry -> {
+            String decryptedContent = encryptionService.decrypt(entry.getContent());
+            entry.setContent(decryptedContent);
+        });
 
+        logger.debug("Decrypted content for {} entries", entries.size());
+        
+        return entries;
+    }
     public void deleteEntry(User user, Long entryId) {
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(
@@ -232,7 +242,7 @@ public class EntryService {
 
     /**
      * Search for entries matching the query
-     * 
+     *
      * @param user  The user performing the search
      * @param query The search query
      * @return List of entries matching the query

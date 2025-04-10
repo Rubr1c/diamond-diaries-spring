@@ -1,6 +1,8 @@
 package dev.rubric.journalspring.controller;
 
+import dev.rubric.journalspring.config.AuthUtil;
 import dev.rubric.journalspring.config.S3Service;
+import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.User;
 import dev.rubric.journalspring.response.UserResponse;
@@ -9,7 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -37,10 +40,9 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping(value = "/upload/profile-picture", consumes = MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> uploadProfilePicture(@AuthenticationPrincipal User user,
-                                                       @RequestParam("profilePicture")
-                                                       MultipartFile profilePicture) {
+    @PostMapping(value = "/upload/profile-picture", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> uploadProfilePicture(
+            @RequestParam("profilePicture") MultipartFile profilePicture) {
 
         logger.debug("User '{}' is uploading new profile picture", user.getEmail());
 
@@ -63,9 +65,8 @@ public class UserController {
     }
 
     @DeleteMapping
-    public ResponseEntity<String> deleteProfilePicture(@AuthenticationPrincipal User user){
-
-        logger.debug("User '{}' is deleting profile picture", user.getEmail());
+    public ResponseEntity<String> deleteProfilePicture(){
+        User user = authUtil.getAuthenticatedUser();
 
         if(user.getProfilePicture() != null){
             try{
