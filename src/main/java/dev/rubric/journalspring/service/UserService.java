@@ -1,5 +1,8 @@
 package dev.rubric.journalspring.service;
 
+import dev.rubric.journalspring.config.S3Service;
+import dev.rubric.journalspring.dto.UpdateUserDto;
+import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.User;
 import dev.rubric.journalspring.repository.UserRepository;
@@ -9,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -60,5 +65,18 @@ public class UserService {
                 throw new ApplicationException("Failed to delete profile picture", HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }
+    }
+
+    public void updateUser(User user,
+                           UpdateUserDto updatedInfo) {
+
+        if (updatedInfo.aiAllowContentAccess() != null) {
+            user.setAiAllowContentAccess(updatedInfo.aiAllowContentAccess());
+        }
+        if (updatedInfo.aiAllowTitleAccess() != null) {
+            user.setAiAllowTitleAccess(updatedInfo.aiAllowTitleAccess());
+        }
+
+        userRepository.save(user);
     }
 }

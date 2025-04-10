@@ -1,7 +1,9 @@
 package dev.rubric.journalspring.controller;
 
 import dev.rubric.journalspring.config.AuthUtil;
-import dev.rubric.journalspring.service.S3Service;
+import dev.rubric.journalspring.config.S3Service;
+import dev.rubric.journalspring.dto.UpdateUserDto;
+import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.User;
 import dev.rubric.journalspring.response.UserResponse;
@@ -10,9 +12,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
 
 
 @RequestMapping("/api/v1/user")
@@ -47,7 +57,7 @@ public class UserController {
         }
     }
 
-    @PostMapping(value = "/upload/profile-picture", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/profile-picture", consumes = MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadProfilePicture(
             @RequestParam("profilePicture") MultipartFile profilePicture) {
 
@@ -70,7 +80,7 @@ public class UserController {
         }
     }
 
-    @DeleteMapping
+    @DeleteMapping("/profile-picture")
     public ResponseEntity<String> deleteProfilePicture(){
         User user = authUtil.getAuthenticatedUser();
 
@@ -89,5 +99,12 @@ public class UserController {
         }
     }
 
+    @PutMapping("/update/settings")
+    public ResponseEntity<String> updateUserSettings(@AuthenticationPrincipal User user,
+                                                     UpdateUserDto updatedInfo) {
+        userService.updateUser(user, updatedInfo);
+
+        return ResponseEntity.ok("Updated user");
+    }
 
 }
