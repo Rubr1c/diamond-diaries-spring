@@ -1,7 +1,7 @@
 package dev.rubric.journalspring.controller;
 
 import dev.rubric.journalspring.config.AuthUtil;
-import dev.rubric.journalspring.config.S3Service;
+import dev.rubric.journalspring.service.S3Service;
 import dev.rubric.journalspring.dto.UpdateUserDto;
 import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
