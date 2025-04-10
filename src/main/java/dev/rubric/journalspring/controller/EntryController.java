@@ -1,27 +1,23 @@
     package dev.rubric.journalspring.controller;
 
-    import dev.rubric.journalspring.config.AuthUtil;
     import dev.rubric.journalspring.dto.EntryDto;
     import dev.rubric.journalspring.enums.MediaType;
     import dev.rubric.journalspring.exception.ApplicationException;
-import dev.rubric.journalspring.models.Tag;
-import dev.rubric.journalspring.models.User;
+    import dev.rubric.journalspring.models.User;
     import dev.rubric.journalspring.response.EntryResponse;
     import dev.rubric.journalspring.response.MediaResponse;
     import dev.rubric.journalspring.service.EntryService;
-    import dev.rubric.journalspring.service.UserService;
     import org.slf4j.Logger;
     import org.slf4j.LoggerFactory;
     import org.springframework.http.HttpStatus;
     import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+    import org.springframework.security.core.annotation.AuthenticationPrincipal;
+    import org.springframework.web.bind.annotation.*;
     import org.springframework.web.multipart.MultipartFile;
 
     import java.time.LocalDate;
     import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+    import java.util.stream.Collectors;
 
     import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
 
@@ -31,20 +27,18 @@ import java.util.stream.Collectors;
         private static final Logger logger = LoggerFactory.getLogger(EntryController.class);
 
         private final EntryService entryService;
-        private final AuthUtil authUtil;
 
 
-        public EntryController(EntryService entryService, UserService userService, AuthUtil authUtil) {
+        public EntryController(EntryService entryService) {
             this.entryService = entryService;
-            this.authUtil = authUtil;
         }
 
 
         @GetMapping("/{id}")
-        public ResponseEntity<EntryResponse> getEntryById(@PathVariable Long id){
-            User user = authUtil.getAuthenticatedUser();
-            logger.info("User {} is requesting entry with ID: {}", user.getId(), id);
+        public ResponseEntity<EntryResponse> getEntryById(@AuthenticationPrincipal User user,
+                                                          @PathVariable Long id) {
 
+            logger.debug("User '{}' is requesting entry with id '{}'", user.getId(), id);
 
             EntryResponse entryResponse = new EntryResponse(entryService.getEntryById(user, id));
             return ResponseEntity.ok(entryResponse);
@@ -52,9 +46,9 @@ import java.util.stream.Collectors;
          
 
         @GetMapping("/date/{date}")
-        public ResponseEntity<List<EntryResponse>> getEntriesByDate(@PathVariable LocalDate date){
-            User user = authUtil.getAuthenticatedUser();
-            logger.info("User {} is requesting entries for date: {}", user.getId(), date);
+        public ResponseEntity<List<EntryResponse>> getEntriesByDate(@AuthenticationPrincipal User user,
+                                                                    @PathVariable LocalDate date){
+            logger.debug("User '{}' is requesting entries for date '{}'", user.getId(), date);
 
             List<EntryResponse> entryResponses = entryService.getEntriesByYearAndMonth(user, date)
                     .stream()
@@ -65,9 +59,8 @@ import java.util.stream.Collectors;
         }
 
         @GetMapping
-        public ResponseEntity<List<EntryResponse>> getAllUserEntries(){
-            User user = authUtil.getAuthenticatedUser();
-            logger.info("User {} is requesting all journal entries", user.getId());
+        public ResponseEntity<List<EntryResponse>> getAllUserEntries(@AuthenticationPrincipal User user){
+            logger.debug("User '{}' is requesting all journal entries", user.getId());
 
             List<EntryResponse> entries = entryService.getAllUserEntries(user)
                     .stream()
@@ -77,80 +70,61 @@ import java.util.stream.Collectors;
             return ResponseEntity.ok(entries);
         }
 
-        @GetMapping("/tag")
-        public ResponseEntity<List<EntryResponse>> getAllUserEntriesByTags(@AuthenticationPrincipal User user,
-                                                                           @RequestBody Set<Tag> tags,
-                                                                           @RequestParam int offset,
-                                                                           @RequestParam int size){
-            
-            logger.info("User {} is requesting all journal entries", user.getId());
-
-            List<EntryResponse> entries = entryService.getUserEntriesByTags(user, tags, offset, size)
-                    .stream()
-                    .map(EntryResponse::new)
-                    .collect(Collectors.toList());
-
-            return ResponseEntity.ok(entries);
-        }
-
-
-
-
         @PostMapping("/new")
-        public ResponseEntity<String> addEntry(@RequestBody EntryDto entryDto){
-            User user = authUtil.getAuthenticatedUser();
-            logger.info("User '{}' is adding a new journal entry", user.getId());
+        public ResponseEntity<String> addEntry(@AuthenticationPrincipal User user,
+                                               @RequestBody EntryDto entryDto){
+            logger.debug("User '{}' is adding a new journal entry", user.getId());
 
             entryService.addEntry(user, entryDto);
             return ResponseEntity.status(HttpStatus.CREATED).body("Entry created successfully");
         }
 
-        @PostMapping("/{entryId}/tag/new")
-        public ResponseEntity<String> addTagsToEntry(@AuthenticationPrincipal User user,
-                                                     @PathVariable Long entryId,
-                                                     @RequestBody Set<Tag> tags)
-        {
-            entryService.addTags(user, entryId, tags);
-            return ResponseEntity.ok("Added tags to entry");
-        }
-
         @PutMapping("/{id}/update")
-        public ResponseEntity<EntryResponse> updateEntry(@RequestBody EntryDto entryDto, @PathVariable Long id){
-            User user = authUtil.getAuthenticatedUser();
-            logger.info("User '{}' is updating a journal entry with id {}", user.getId(), id);
+        public ResponseEntity<EntryResponse> updateEntry(@AuthenticationPrincipal User user,
+                                                         @RequestBody EntryDto entryDto,
+                                                         @PathVariable Long id){
+            logger.debug("User '{}' is updating a journal entry with id '{}'", user.getId(), id);
 
             EntryResponse updateEntry =  new EntryResponse(entryService.updateEntry(user, entryDto, id));
             return ResponseEntity.ok(updateEntry);
         }
 
         @DeleteMapping("/{id}")
-        public ResponseEntity<Void> deleteEntry(@PathVariable Long id){
-            User user = authUtil.getAuthenticatedUser();
+        public ResponseEntity<Void> deleteEntry(@AuthenticationPrincipal User user,
+                                                @PathVariable Long id){
+            logger.debug("User '{}' is deleting journal entry with id '{}'", user.getId(), id);
 
-            logger.info("User {} is deleting journal entry with id {}", user.getId(), id);
             entryService.deleteEntry(user, id);
             return ResponseEntity.noContent().build();
         }
 
         @PostMapping("/{id}/add-to-folder/{folderId}")
-        public ResponseEntity<String> addToFolder(@PathVariable Long id,
+        public ResponseEntity<String> addToFolder(@AuthenticationPrincipal User user,
+                                                  @PathVariable Long id,
                                                   @PathVariable Long folderId) {
-            entryService.addEntryToFolder(authUtil.getAuthenticatedUser(), id, folderId);
 
+            logger.debug("User '{}' is adding entry '{}' in folder '{}'", user.getEmail(), id, folderId);
+
+            entryService.addEntryToFolder(user, id, folderId);
             return ResponseEntity.ok("Added entry to folder");
         }
 
         @DeleteMapping("/{id}/remove-from-folder")
-        public ResponseEntity<String> removeFromFolder(@PathVariable Long id) {
-            entryService.removeEntryFromFolder(authUtil.getAuthenticatedUser(), id);
+        public ResponseEntity<String> removeFromFolder(@AuthenticationPrincipal User user,
+                                                       @PathVariable Long id) {
+            entryService.removeEntryFromFolder(user, id);
 
             return ResponseEntity.ok("Removed entry to folder");
         }
 
         @GetMapping("/folder/{folderId}")
-        public ResponseEntity<List<EntryResponse>> getAllFromFolder(@PathVariable Long folderId) {
+        public ResponseEntity<List<EntryResponse>> getAllFromFolder(@AuthenticationPrincipal User user,
+                                                                    @PathVariable Long folderId) {
+
+            logger.debug("User '{}' is getting all entries from folder '{}'", user.getEmail(), folderId);
+
             List<EntryResponse> entries = entryService
-                    .getAllEntriesFromFolder(authUtil.getAuthenticatedUser(), folderId)
+                    .getAllEntriesFromFolder(user, folderId)
                     .stream()
                     .map(EntryResponse::new)
                     .toList();
@@ -159,14 +133,13 @@ import java.util.stream.Collectors;
         }
       
         @GetMapping("/{id}/media")
-        public ResponseEntity<List<MediaResponse>> getAllMediaForEntry(@PathVariable Long id) {
-            logger.info("Received request for media of entry {}", id);
-
-            User user = authUtil.getAuthenticatedUser();
+        public ResponseEntity<List<MediaResponse>> getAllMediaForEntry(@AuthenticationPrincipal User user,
+                                                                       @PathVariable Long id) {
+            logger.debug("Received request for media of entry {}", id);
 
             entryService.verifyUserOwnsEntry(user, id);
 
-            logger.info("User {} is fetching all media for journal entry with id {}", user.getId(), id);
+            logger.debug("User {} is fetching all media for journal entry with id {}", user.getId(), id);
 
             List<MediaResponse> mediaResponses = entryService.getMediaByEntryId(id);
 
@@ -174,11 +147,13 @@ import java.util.stream.Collectors;
         }
 
         @PostMapping(value = "/{id}/media/new", consumes = MULTIPART_FORM_DATA_VALUE)
-        public ResponseEntity<String> uploadMediaToEntry(@PathVariable Long id,
+        public ResponseEntity<String> uploadMediaToEntry(@AuthenticationPrincipal User user,
+                                                         @PathVariable Long id,
                                                          @RequestParam("mediaType") MediaType mediaType,
                                                          @RequestParam("file") MultipartFile file) {
 
-            User user = authUtil.getAuthenticatedUser();
+            logger.debug("User '{}' adding new media to entry '{}'", user.getEmail(), id);
+
             entryService.verifyUserOwnsEntry(user, id);
 
             if (file.isEmpty()) {
@@ -197,8 +172,11 @@ import java.util.stream.Collectors;
 
 
         @DeleteMapping("/{id}/media/{mediaId}")
-        public ResponseEntity<String> deleteMediaForEntry(@PathVariable Long id, @PathVariable Long mediaId) {
-            User user = authUtil.getAuthenticatedUser();
+        public ResponseEntity<String> deleteMediaForEntry(@AuthenticationPrincipal User user,
+                                                          @PathVariable Long id,
+                                                          @PathVariable Long mediaId) {
+
+            logger.debug("User '{}' adding deleting media '{}' for entry '{}'", user.getEmail(), mediaId, id);
 
             try {
                 entryService.verifyUserOwnsEntry(user, id);

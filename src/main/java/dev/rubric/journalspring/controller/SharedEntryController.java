@@ -1,16 +1,15 @@
 package dev.rubric.journalspring.controller;
 
 
-import dev.rubric.journalspring.config.AuthUtil;
 import dev.rubric.journalspring.dto.SharedEntryDto;
 import dev.rubric.journalspring.models.Entry;
 import dev.rubric.journalspring.models.User;
 import dev.rubric.journalspring.response.EntryResponse;
 import dev.rubric.journalspring.service.SharedEntryService;
-import dev.rubric.journalspring.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -21,42 +20,60 @@ import java.util.UUID;
 public class SharedEntryController {
 
     private final SharedEntryService sharedEntryService;
-    private final AuthUtil authUtil;
+    private final Logger logger = LoggerFactory.getLogger(SharedEntryController.class);
 
-    public SharedEntryController(UserService userService, SharedEntryService sharedEntryService, AuthUtil authUtil) {
+    public SharedEntryController(SharedEntryService sharedEntryService) {
         this.sharedEntryService = sharedEntryService;
-        this.authUtil = authUtil;
     }
 
 
     @PostMapping("/new")
-    public ResponseEntity<UUID> share(@RequestBody SharedEntryDto input) {
-        UUID entryId = sharedEntryService.createSharedEntry(authUtil.getAuthenticatedUser(), input);
+    public ResponseEntity<UUID> share(@AuthenticationPrincipal User user,
+                                      @RequestBody SharedEntryDto input) {
+
+        logger.debug("User '{}' is sharing entry '{}'", user.getEmail(), input.entryId());
+
+        UUID entryId = sharedEntryService.createSharedEntry(user, input);
 
         return ResponseEntity.ok(entryId);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<EntryResponse> get(@PathVariable UUID id) {
-        Entry entry = sharedEntryService.accessSharedEntry(authUtil.getAuthenticatedUser(), id);
+    public ResponseEntity<EntryResponse> get(@AuthenticationPrincipal User user,
+                                             @PathVariable UUID id) {
+
+        logger.debug("User '{}' is requesting to access shared entry '{}'", user.getEmail(), id);
+
+        Entry entry = sharedEntryService.accessSharedEntry(user, id);
 
         return ResponseEntity.ok(new EntryResponse(entry));
     }
 
     @PostMapping("/{id}/add-user")
-    public ResponseEntity<String> addUser(@PathVariable UUID id,
+    public ResponseEntity<String> addUser(@AuthenticationPrincipal User user,
+                                          @PathVariable UUID id,
                                           @RequestBody Map<String, String> input) {
+        String email = input.get("userEmail");
+
+        logger.debug("User '{}' is adding user '{}' to shared entry '{}'", user.getEmail(), email, id);
+
         sharedEntryService
-                .addUserToSharedEntry(authUtil.getAuthenticatedUser(), id, input.get("userEmail"));
+                .addUserToSharedEntry(user, id, email);
 
         return ResponseEntity.ok("User added to entry");
     }
 
     @PostMapping("/{id}/remove-user")
-    public ResponseEntity<String> removeUser(@PathVariable UUID id,
+    public ResponseEntity<String> removeUser(@AuthenticationPrincipal User user,
+                                             @PathVariable UUID id,
                                              @RequestBody Map<String, String> input) {
+
+        String email = input.get("userEmail");
+
+        logger.debug("User '{}' is removing user '{}' to shared entry '{}'", user.getEmail(), email, id);
+
         sharedEntryService
-                .removeUserToSharedEntry(authUtil.getAuthenticatedUser(), id, input.get("userEmail"));
+                .removeUserToSharedEntry(user, id, email);
 
         return ResponseEntity.ok("User removed to entry");
     }

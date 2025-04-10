@@ -1,8 +1,6 @@
 package dev.rubric.journalspring.controller;
 
-import dev.rubric.journalspring.config.AuthUtil;
 import dev.rubric.journalspring.service.S3Service;
-import dev.rubric.journalspring.dto.UpdateUserDto;
 import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.User;
@@ -19,9 +17,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
 
 
@@ -30,38 +25,27 @@ import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
 public class UserController {
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
     private final UserService userService;
-    private final AuthUtil authUtil;
 
-    public UserController(UserService userService, AuthUtil authUtil, S3Service s3Service) {
+    public UserController(UserService userService, S3Service s3Service) {
         this.userService = userService;
-        this.authUtil = authUtil;
     }
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> authenticatedUser() {
-        logger.info("Getting authenticated user");
+    public ResponseEntity<UserResponse> authenticatedUser(@AuthenticationPrincipal User user) {
 
-        try {
-            User user = authUtil.getAuthenticatedUser();
-            logger.info("Found authenticated user: - ID: {}, Username: {}, Email: {}, Activated: {}",
-                    user.getId(),
-                    user.getDisplayUsername(),
-                    user.getEmail(),
-                    user.isEnabled());
+        logger.debug("User '{}' requesting their info", user.getEmail());
 
-            UserResponse response = new UserResponse(user);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            logger.error("Error creating user response", e);
-            return ResponseEntity.internalServerError().build();
-        }
+        UserResponse response = new UserResponse(user);
+
+        return ResponseEntity.ok(response);
     }
 
-    @PostMapping(value = "/profile-picture", consumes = MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> uploadProfilePicture(
-            @RequestParam("profilePicture") MultipartFile profilePicture) {
+    @PostMapping(value = "/upload/profile-picture", consumes = MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> uploadProfilePicture(@AuthenticationPrincipal User user,
+                                                       @RequestParam("profilePicture") MultipartFile profilePicture) {
 
-        User user = authUtil.getAuthenticatedUser();
+        logger.debug("User '{}' is uploading new profile picture", user.getEmail());
+
 
         if (profilePicture.isEmpty()) {
             return ResponseEntity.badRequest().body("File must not be empty");
@@ -80,9 +64,8 @@ public class UserController {
         }
     }
 
-    @DeleteMapping("/profile-picture")
-    public ResponseEntity<String> deleteProfilePicture(){
-        User user = authUtil.getAuthenticatedUser();
+    @DeleteMapping
+    public ResponseEntity<String> deleteProfilePicture(@AuthenticationPrincipal User user){
 
         if(user.getProfilePicture() != null){
             try{
@@ -99,12 +82,5 @@ public class UserController {
         }
     }
 
-    @PutMapping("/update/settings")
-    public ResponseEntity<String> updateUserSettings(@AuthenticationPrincipal User user,
-                                                     UpdateUserDto updatedInfo) {
-        userService.updateUser(user, updatedInfo);
-
-        return ResponseEntity.ok("Updated user");
-    }
 
 }
