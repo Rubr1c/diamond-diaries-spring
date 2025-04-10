@@ -12,7 +12,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
       # Security Configuration
       - JWT_SECRET=${JWT_SECRET}
-      - ADMIN_KEY=${ADMIN_KEY}
       # Mail Configuration
       - SPRING_MAIL_USERNAME=${MAIL_USERNAME}
       - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD}
@@ -29,7 +28,7 @@ services:
       - ENCRYPTION_SALT=${ENCRYPTION_SALT}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       - db
     networks:

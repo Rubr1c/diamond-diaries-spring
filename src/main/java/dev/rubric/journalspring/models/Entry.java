@@ -28,7 +28,7 @@ public class Entry {
     @JoinColumn(name = "folder_id")
     private Folder folder;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String title;
 
     @Column(nullable = false, columnDefinition = "TEXT")
@@ -161,5 +161,9 @@ public class Entry {
 
     public void addTags(Set<Tag> tags) {
         this.tags.addAll(tags);
+    }
+
+    public void setJournalDate(LocalDate journalDate) {
+        this.journalDate = journalDate;
     }
 }
