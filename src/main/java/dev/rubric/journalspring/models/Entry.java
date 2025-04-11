@@ -36,7 +36,7 @@ public class Entry {
 
     @ManyToMany
     @JoinTable(
-            name = "entry_id",
+            name = "entry_tags",
             joinColumns = @JoinColumn(name = "entry_id"),
             inverseJoinColumns = @JoinColumn(name = "tag_id")
     )

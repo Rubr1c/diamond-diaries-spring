@@ -59,6 +59,22 @@
         }
 
         @GetMapping
+        public ResponseEntity<List<EntryResponse>> getUserEntries(@AuthenticationPrincipal User user,
+                                                                  @RequestParam Integer offset,
+                                                                  @RequestParam Integer amount) {
+
+
+            logger.debug("User '{}' is requesting journal entries", user.getId());
+
+            List<EntryResponse> entries = entryService.getUserEntries(user, offset, amount)
+                    .stream()
+                    .map(EntryResponse::new)
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(entries);
+        }
+
+        @GetMapping("/all")
         public ResponseEntity<List<EntryResponse>> getAllUserEntries(@AuthenticationPrincipal User user){
             logger.debug("User '{}' is requesting all journal entries", user.getId());
 
