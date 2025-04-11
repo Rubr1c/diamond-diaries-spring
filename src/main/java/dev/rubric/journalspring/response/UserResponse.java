@@ -2,6 +2,7 @@ package dev.rubric.journalspring.response;
 
 import dev.rubric.journalspring.models.User;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.Column;
 
 import java.time.ZonedDateTime;
 import java.util.UUID;
@@ -19,6 +20,12 @@ public class UserResponse {
     private ZonedDateTime lastLogin;
     @JsonProperty
     private ZonedDateTime createdAt;
+    @JsonProperty
+    private Boolean enabled2fa;
+    @JsonProperty
+    private boolean aiAllowTitleAccess;
+    @JsonProperty
+    private boolean aiAllowContentAccess;
 
     public UserResponse() {}
 
@@ -32,6 +39,9 @@ public class UserResponse {
         this.streak = user.getStreak();
         this.lastLogin = user.getLastLogin().orElse(null);
         this.createdAt = user.getCreatedAt();
+        this.enabled2fa = user.isEnabled2fa();
+        this.aiAllowTitleAccess = user.isAiAllowTitleAccess();
+        this.aiAllowContentAccess = user.isAiAllowContentAccess();
     }
 
     public String getUsername() {

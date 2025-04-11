@@ -1,5 +1,6 @@
 package dev.rubric.journalspring.controller;
 
+import dev.rubric.journalspring.dto.UpdateUserDto;
 import dev.rubric.journalspring.service.S3Service;
 import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
@@ -82,5 +83,12 @@ public class UserController {
         }
     }
 
+    @PutMapping("/update/settings")
+    public ResponseEntity<String> updateUserSettings(@AuthenticationPrincipal User user,
+                                                     UpdateUserDto updatedInfo) {
+        userService.updateUser(user, updatedInfo);
+
+        return ResponseEntity.ok("Updated user");
+    }
 
 }

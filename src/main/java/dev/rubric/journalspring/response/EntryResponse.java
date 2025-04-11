@@ -1,7 +1,7 @@
 package dev.rubric.journalspring.response;
 
-import dev.rubric.journalspring.models.Entry;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import dev.rubric.journalspring.models.Entry;
 import dev.rubric.journalspring.models.Folder;
 import dev.rubric.journalspring.models.Tag;
 
@@ -12,6 +12,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class EntryResponse {
+    @JsonProperty
+    private Long id;
     @JsonProperty
     private UUID publicId;
     @JsonProperty
@@ -35,6 +37,7 @@ public class EntryResponse {
         if (entry == null) {
             throw new IllegalArgumentException("Entry cannot be null");
         }
+        this.id = entry.getId();
         this.publicId = entry.getPublicId();
         this.title = entry.getTitle();
         this.content = entry.getContent();
@@ -46,6 +49,7 @@ public class EntryResponse {
         this.folderId = entry.getFolder().map(Folder::getId).orElse(null);
     }
 
+    public Long getId() { return id; }
     public UUID getPublicId() { return publicId; }
     public String getTitle() { return title; }
     public String getContent() { return content; }

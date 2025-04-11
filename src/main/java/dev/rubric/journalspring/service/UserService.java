@@ -76,6 +76,9 @@ public class UserService {
         if (updatedInfo.aiAllowTitleAccess() != null) {
             user.setAiAllowTitleAccess(updatedInfo.aiAllowTitleAccess());
         }
+        if (updatedInfo.enabled2fa() != null) {
+            user.setEnabled2fa(updatedInfo.enabled2fa());
+        }
 
         userRepository.save(user);
     }
