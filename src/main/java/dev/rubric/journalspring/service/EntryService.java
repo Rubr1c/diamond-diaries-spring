@@ -1,5 +1,6 @@
 package dev.rubric.journalspring.service;
 
+import dev.rubric.journalspring.repository.TagRepository;
 import dev.rubric.journalspring.service.S3Service;
 import dev.rubric.journalspring.dto.EntryDto;
 import dev.rubric.journalspring.enums.MediaType;
@@ -38,6 +39,7 @@ public class EntryService {
     private final FolderService folderService;
     private final S3Service s3Service;
     private final SearchService searchService;
+    private final TagRepository tagRepository;
 
     @Autowired
     public EntryService(
@@ -46,13 +48,14 @@ public class EntryService {
             MediaRepository mediaRepository,
             FolderService folderService,
             S3Service s3Service,
-            SearchService searchService) {
+            SearchService searchService, TagRepository tagRepository) {
         this.entryRepository = entryRepository;
         this.encryptionService = encryptionService;
         this.mediaRepository = mediaRepository;
         this.s3Service = s3Service;
         this.folderService = folderService;
         this.searchService = searchService;
+        this.tagRepository = tagRepository;
     }
 
     public Entry addEntry(User user, EntryDto details) {
@@ -60,12 +63,21 @@ public class EntryService {
         String encryptedContent = encryptionService.encrypt(details.content());
         logger.debug("Content encrypted for new entry");
 
+        Folder folder = folderService.getFolder(user, details.folderId());
+
+        Set<Tag> tags = details.tagIds()
+                .stream()
+                .map(tagId -> tagRepository.findById(tagId))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toSet());
+
         Entry entry = new Entry(
                 user,
-                details.folder(),
+                folder,
                 details.title(),
                 encryptedContent,
-                details.tags(),
+                tags,
                 details.wordCount());
 
         entryRepository.save(entry);
@@ -170,24 +182,38 @@ public class EntryService {
                     HttpStatus.UNAUTHORIZED);
         }
 
-        // Encrypt the updated content
-        String encryptedContent = encryptionService.encrypt(details.content());
-        logger.debug("Content encrypted for updated entry id: {}", entryId);
+        boolean needIndexUpdate = false;
+
+        if (details.content() != null) {
+            String encryptedContent = encryptionService.encrypt(details.content());
+            logger.debug("Content encrypted for updated entry id: {}", entryId);
+            entry.setContent(encryptedContent);
+            needIndexUpdate = true;
+        }
+
+        if (details.isFavorite() != null) {
+            entry.setFavorite(details.isFavorite());
+        }
+
+        if (details.title() != null || !details.title().isEmpty()) {
+            entry.setTitle(details.title());
+            needIndexUpdate = true;
+        }
+
+        if (details.wordCount() != null) {
+            entry.setWordCount(details.wordCount());
+        }
+
 
         entry.setLastEdited(ZonedDateTime.now());
-        entry.setContent(encryptedContent);
-        entry.setFavorite(details.isFavorite());
-        entry.setTitle(details.title());
-        entry.setWordCount(details.wordCount());
 
         entryRepository.save(entry);
 
-        // Update search tokens for the entry
-        searchService.indexEntry(entry, details.content());
-        logger.debug("Search tokens updated for entry {}", entryId);
+        if (needIndexUpdate)
+            searchService.indexEntry(entry, details.content());
 
-        // Decrypt for the response
-        entry.setContent(details.content()); // Use original content for response
+
+        entry.setContent(details.content());
         return entry;
     }
 

@@ -63,7 +63,7 @@ public class SharedEntryController {
         return ResponseEntity.ok("User added to entry");
     }
 
-    @PostMapping("/{id}/remove-user")
+    @DeleteMapping("/{id}/remove-user")
     public ResponseEntity<String> removeUser(@AuthenticationPrincipal User user,
                                              @PathVariable UUID id,
                                              @RequestBody Map<String, String> input) {
