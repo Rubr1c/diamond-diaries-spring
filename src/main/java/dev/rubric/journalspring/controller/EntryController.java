@@ -19,6 +19,7 @@
     import java.time.LocalDate;
     import java.util.List;
     import java.util.Set;
+    import java.util.UUID;
     import java.util.stream.Collectors;
 
     import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
@@ -89,18 +90,26 @@
         }
         @GetMapping("/tag")
         public ResponseEntity<List<EntryResponse>> getAllUserEntriesByTags(@AuthenticationPrincipal User user,
-                                                                           @RequestBody Set<Tag> tags,
+                                                                           @RequestBody Set<Long> tagIds,
                                                                            @RequestParam int offset,
                                                                            @RequestParam int size){
 
             logger.info("User {} is requesting all journal entries", user.getId());
 
-            List<EntryResponse> entries = entryService.getUserEntriesByTags(user, tags, offset, size)
+            List<EntryResponse> entries = entryService.getUserEntriesByTags(user, tagIds, offset, size)
                     .stream()
                     .map(EntryResponse::new)
                     .collect(Collectors.toList());
 
             return ResponseEntity.ok(entries);
+        }
+
+        @GetMapping("/uuid/{uuid}")
+        public ResponseEntity<EntryResponse> getEntryByUuid(@AuthenticationPrincipal User user,
+                                                            @PathVariable UUID uuid) {
+            logger.info("User {} is requesting journal entry with id {}", user.getId(), uuid);
+
+            return ResponseEntity.ok(new EntryResponse(entryService.getEntryByUuid(user, uuid)));
         }
 
         @PostMapping("/new")
@@ -115,9 +124,9 @@
         @PostMapping("/{entryId}/tag/new")
         public ResponseEntity<String> addTagsToEntry(@AuthenticationPrincipal User user,
                                                      @PathVariable Long entryId,
-                                                     @RequestBody Set<Tag> tags)
+                                                     @RequestBody Set<Long> tagIds)
         {
-            entryService.addTags(user, entryId, tags);
+            entryService.addTags(user, entryId, tagIds);
             return ResponseEntity.ok("Added tags to entry");
         }
 

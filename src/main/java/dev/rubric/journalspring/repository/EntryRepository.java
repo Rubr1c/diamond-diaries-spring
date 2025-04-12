@@ -12,7 +12,9 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 public interface EntryRepository extends CrudRepository<Entry, Long> {
     List<Entry> findAllByUser(User user);
@@ -21,4 +23,6 @@ public interface EntryRepository extends CrudRepository<Entry, Long> {
     List<Entry> findAllByFolder(Folder folder);
     @Query("SELECT DISTINCT e FROM Entry e JOIN e.tags t WHERE e.user = :user AND t IN :tags ORDER BY e.journalDate DESC")
     Page<Entry> findByUserAndTags(@Param("user") User user, @Param("tags") Set<Tag> tags, Pageable pageable);
+
+    Optional<Entry> findEntryByPublicId(UUID publicId);
 }

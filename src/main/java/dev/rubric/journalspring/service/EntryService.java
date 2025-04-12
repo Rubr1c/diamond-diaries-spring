@@ -1,14 +1,12 @@
 package dev.rubric.journalspring.service;
 
 import dev.rubric.journalspring.repository.TagRepository;
-import dev.rubric.journalspring.service.S3Service;
 import dev.rubric.journalspring.dto.EntryDto;
 import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.*;
 import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.MediaRepository;
-import dev.rubric.journalspring.response.EntryResponse;
 import dev.rubric.journalspring.response.MediaResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,17 +15,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.metrics.StartupStep.Tags;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -67,7 +61,7 @@ public class EntryService {
 
         Set<Tag> tags = details.tagIds()
                 .stream()
-                .map(tagId -> tagRepository.findById(tagId))
+                .map(tagRepository::findById)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toSet());
@@ -138,9 +132,20 @@ public class EntryService {
 
         return entries;
     }
-    public List<Entry> getUserEntriesByTags(User user, Set<Tag> tags, int offset, int count){
+    public List<Entry> getUserEntriesByTags(User user, Set<Long> tagIds, int offset, int count){
         PageRequest pageRequest = PageRequest.of(offset, count, Sort.by(Sort.Direction.DESC, "journalDate"));
+
+        Set<Tag> tags = tagIds.stream()
+                .map(tagRepository::findById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toSet());
+
+
+
         List<Entry> entries = entryRepository.findByUserAndTags(user, tags, pageRequest).getContent();
+
+
         entries.forEach(entry -> {
             String decryptedContent = encryptionService.decrypt(entry.getContent());
             entry.setContent(decryptedContent);
@@ -149,6 +154,18 @@ public class EntryService {
         logger.debug("Decrypted content for {} entries", entries.size());
         
         return entries;
+    }
+
+    public Entry getEntryByUuid(User user, UUID uuid) {
+        Entry entry = entryRepository.findEntryByPublicId(uuid)
+                .orElseThrow(() -> new ApplicationException("Entry not found", HttpStatus.NOT_FOUND));
+
+        if (!entry.getUser().getId().equals(user.getId())) {
+            throw new ApplicationException(
+                    String.format("User with id %d is not authorized", user.getId()),
+                    HttpStatus.UNAUTHORIZED);
+        }
+        return entry;
     }
     public void deleteEntry(User user, Long entryId) {
         Entry entry = entryRepository.findById(entryId)
@@ -246,7 +263,7 @@ public class EntryService {
         return entries;
     }
 
-    public Entry addTags(User user, Long entryId, Set<Tag> tags) {
+    public void addTags(User user, Long entryId, Set<Long> tagIds) {
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(
                         String.format("Entry with %d not found", entryId),
@@ -257,6 +274,13 @@ public class EntryService {
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
         }
+        Set<Tag> tags = tagIds.stream()
+                .map(tagRepository::findById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toSet());
+
+
         entry.addTags(tags);
         entryRepository.save(entry);
 
@@ -264,7 +288,6 @@ public class EntryService {
         String decryptedContent = encryptionService.decrypt(entry.getContent());
         searchService.indexEntry(entry, decryptedContent);
 
-        return entry;
     }
 
     /**
