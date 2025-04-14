@@ -128,7 +128,7 @@ public class EntryService {
 
     public List<Entry> getUserEntries(User user, int offset, int count) {
         PageRequest pageRequest = PageRequest.of(offset, count, Sort.by(Sort.Direction.DESC, "journalDate"));
-        List<Entry> entries = entryRepository.findAllByUserOrderByJournalDateDesc(user, pageRequest).getContent();
+        List<Entry> entries = entryRepository.findAllByUserOrderByDateCreatedDesc(user, pageRequest).getContent();
 
         // Decrypt all entries' content
         entries.forEach(entry -> {
@@ -203,7 +203,7 @@ public class EntryService {
                         String.format("Entry with %d not found", entryId),
                         HttpStatus.NOT_FOUND));
 
-        if (!entry.getUser().equals(user)) {
+        if (!entry.getUser().getId().equals(user.getId())) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
@@ -222,7 +222,7 @@ public class EntryService {
             entry.setFavorite(details.isFavorite());
         }
 
-        if (details.title() != null || !details.title().isEmpty()) {
+        if (details.title() != null) {
             entry.setTitle(details.title());
             needIndexUpdate = true;
         }
