@@ -31,7 +31,7 @@ public class FolderService {
                         HttpStatus.NOT_FOUND)
                 );
 
-        if (!folder.getUser().equals(user)) {
+        if (!folder.getUser().getId().equals(user.getId())) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);

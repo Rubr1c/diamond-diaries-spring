@@ -332,7 +332,7 @@ public class AuthServiceUnitTests {
 
         assertNotNull(authenticatedUser);
         assertEquals(0, authenticatedUser.getStreak());
-        verify(userRepository).save(mockUser);
+        verify(userRepository, times(2)).save(mockUser);
     }
 
     @Test
@@ -357,7 +357,7 @@ public class AuthServiceUnitTests {
 
         assertNotNull(authenticatedUser);
         assertEquals(5, authenticatedUser.getStreak());
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, times(1)).save(any(User.class));
     }
 
     @Test

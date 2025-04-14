@@ -57,14 +57,22 @@ public class EntryService {
         String encryptedContent = encryptionService.encrypt(details.content());
         logger.debug("Content encrypted for new entry");
 
-        Folder folder = folderService.getFolder(user, details.folderId());
 
-        Set<Tag> tags = details.tagIds()
-                .stream()
-                .map(tagRepository::findById)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toSet());
+        Folder folder = null;
+        Set<Tag> tags = new HashSet<>();
+        if (details.folderId() != null) {
+            folder = folderService.getFolder(user, details.folderId());
+        }
+
+        if (details.tagIds() != null) {
+            tags = details.tagIds()
+                    .stream()
+                    .map(tagRepository::findById)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .collect(Collectors.toSet());
+        }
+
 
         Entry entry = new Entry(
                 user,
@@ -165,6 +173,8 @@ public class EntryService {
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
         }
+        String decryptedContent = encryptionService.decrypt(entry.getContent());
+        entry.setContent(decryptedContent);
         return entry;
     }
     public void deleteEntry(User user, Long entryId) {
