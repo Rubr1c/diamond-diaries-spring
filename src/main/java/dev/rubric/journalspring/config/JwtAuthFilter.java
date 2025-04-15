@@ -1,6 +1,8 @@
 package dev.rubric.journalspring.config;
 
 import dev.rubric.journalspring.service.JwtService;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -77,9 +79,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
 
             filterChain.doFilter(request, response);
-        } catch (Exception exception) {
+        } catch (ExpiredJwtException e) {
+            logger.error("JWT expired", e);
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token expired");
+        } catch (JwtException e) {
+            logger.error("JWT invalid", e);
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
+        }
+        catch (Exception exception) {
             logger.error("Error processing JWT token", exception);
             handlerExceptionResolver.resolveException(request, response, null, exception);
         }
+
     }
 }
