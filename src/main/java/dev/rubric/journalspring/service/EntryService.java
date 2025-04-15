@@ -98,7 +98,7 @@ public class EntryService {
                         String.format("Entry with %d not found", entryId),
                         HttpStatus.NOT_FOUND));
 
-        if (!entry.getUser().equals(user)) {
+        if (!entry.getUser().getId().equals(user.getId())) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
@@ -318,7 +318,7 @@ public class EntryService {
                         String.format("Entry with %d not found", entryId),
                         HttpStatus.NOT_FOUND));
 
-        if (!entry.getUser().equals(user)) {
+        if (!entry.getUser().getId().equals(user.getId())) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
