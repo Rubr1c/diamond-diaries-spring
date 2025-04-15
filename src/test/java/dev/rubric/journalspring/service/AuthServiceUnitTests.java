@@ -291,7 +291,7 @@ public class AuthServiceUnitTests {
         mockUser.setStreak(5);
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(mockUser));
-        when(entryRepository.findAllByUserOrderByJournalDateDesc(eq(mockUser), any(PageRequest.class)))
+        when(entryRepository.findAllByUserOrderByDateCreatedDesc(eq(mockUser), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(List.of()));
 
         ArgumentCaptor<UsernamePasswordAuthenticationToken> authCaptor = ArgumentCaptor
@@ -325,7 +325,7 @@ public class AuthServiceUnitTests {
         lastEntry.setJournalDate(LocalDate.now().minusDays(3));
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(mockUser));
-        when(entryRepository.findAllByUserOrderByJournalDateDesc(eq(mockUser), any(PageRequest.class)))
+        when(entryRepository.findAllByUserOrderByDateCreatedDesc(eq(mockUser), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(List.of(lastEntry)));
 
         User authenticatedUser = authService.authenticate(input);
@@ -350,7 +350,7 @@ public class AuthServiceUnitTests {
         lastEntry.setJournalDate(LocalDate.now().minusDays(1));
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(mockUser));
-        when(entryRepository.findAllByUserOrderByJournalDateDesc(eq(mockUser), any(PageRequest.class)))
+        when(entryRepository.findAllByUserOrderByDateCreatedDesc(eq(mockUser), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(List.of(lastEntry)));
 
         User authenticatedUser = authService.authenticate(input);

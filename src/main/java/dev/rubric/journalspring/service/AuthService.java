@@ -22,9 +22,7 @@ import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
-import java.util.stream.Stream;
 
 @Service
 public class AuthService {
@@ -392,7 +390,7 @@ public class AuthService {
 
         // Find the most recent entry for this user
         PageRequest pageRequest = PageRequest.of(0, 1, Sort.by(Sort.Direction.DESC, "journalDate"));
-        List<Entry> recentEntries = entryRepository.findAllByUserOrderByJournalDateDesc(user, pageRequest).getContent();
+        List<Entry> recentEntries = entryRepository.findAllByUserOrderByDateCreatedDesc(user, pageRequest).getContent();
 
         if (recentEntries.isEmpty()) {
             // If no entries, no need to reset streak
