@@ -97,7 +97,7 @@
 
         @GetMapping("/tag")
         public ResponseEntity<List<EntryResponse>> getAllUserEntriesByTags(@AuthenticationPrincipal User user,
-                                                                           @RequestBody Set<String> tagNames,
+                                                                           @RequestBody List<String> tagNames,
                                                                            @RequestParam int offset,
                                                                            @RequestParam int size){
 
@@ -115,7 +115,7 @@
         @PostMapping("/{entryId}/tag/new")
         public ResponseEntity<String> addTagsToEntry(@AuthenticationPrincipal User user,
                                                      @PathVariable Long entryId,
-                                                     @RequestBody Set<String> tagNames) {
+                                                     @RequestBody List<String> tagNames) {
             entryService.addTags(user, entryId, tagNames);
             return ResponseEntity.ok("Added tags to entry");
         }

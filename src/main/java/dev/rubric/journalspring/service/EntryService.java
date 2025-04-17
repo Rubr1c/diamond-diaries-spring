@@ -64,10 +64,10 @@ public class EntryService {
             folder = folderService.getFolder(user, details.folderId());
         }
 
-        if (details.tagIds() != null) {
-            tags = details.tagIds()
+        if (details.tagNames() != null) {
+            tags = details.tagNames()
                     .stream()
-                    .map(tagRepository::findById)
+                    .map(tagRepository::findByName)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .collect(Collectors.toSet());
@@ -141,7 +141,7 @@ public class EntryService {
         return entries;
     }
 
-    public List<Entry> getUserEntriesByTags(User user, Set<String> tagNames, int offset, int count){
+    public List<Entry> getUserEntriesByTags(User user, List<String> tagNames, int offset, int count){
         PageRequest pageRequest = PageRequest.of(offset, count, Sort.by(Sort.Direction.DESC, "journalDate"));
 
         Set<Tag> tags = tagNames.stream()
@@ -281,17 +281,8 @@ public class EntryService {
         return entries;
     }
 
-    public void addTags(User user, Long entryId, Set<String> tagNames) {
-        Entry entry = entryRepository.findById(entryId)
-                .orElseThrow(() -> new ApplicationException(
-                        String.format("Entry with %d not found", entryId),
-                        HttpStatus.NOT_FOUND));
-
-        if (!entry.getUser().equals(user)) {
-            throw new ApplicationException(
-                    String.format("User with id %d is not authorized", user.getId()),
-                    HttpStatus.UNAUTHORIZED);
-        }
+    public void addTags(User user, Long entryId, List<String> tagNames) {
+        Entry entry = verifyUserOwnsEntry(user, entryId);
 
         Set<Tag> tags = tagNames.stream()
                 .map(tagRepository::findByName)
