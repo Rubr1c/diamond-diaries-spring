@@ -140,6 +140,7 @@ public class EntryService {
 
         return entries;
     }
+
     public List<Entry> getUserEntriesByTags(User user, Set<Long> tagIds, int offset, int count){
         PageRequest pageRequest = PageRequest.of(offset, count, Sort.by(Sort.Direction.DESC, "journalDate"));
 
@@ -163,6 +164,13 @@ public class EntryService {
         
         return entries;
     }
+
+    public Set<Tag> getAllEntryTags(User user, Long entryId) {
+        Entry entry = verifyUserOwnsEntry(user, entryId);
+
+        return entry.getTags();
+    }
+
 
     public Entry getEntryByUuid(User user, UUID uuid) {
         Entry entry = entryRepository.findEntryByPublicId(uuid)

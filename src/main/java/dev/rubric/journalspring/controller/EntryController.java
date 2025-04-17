@@ -88,6 +88,13 @@
 
             return ResponseEntity.ok(entries);
         }
+
+        @GetMapping("{id}/tags")
+        public ResponseEntity<Set<Tag>> getAllEntryTags(@AuthenticationPrincipal User user,
+                                                        @PathVariable Long id) {
+            return ResponseEntity.ok(entryService.getAllEntryTags(user, id));
+        }
+
         @GetMapping("/tag")
         public ResponseEntity<List<EntryResponse>> getAllUserEntriesByTags(@AuthenticationPrincipal User user,
                                                                            @RequestBody Set<Long> tagIds,
@@ -104,6 +111,16 @@
             return ResponseEntity.ok(entries);
         }
 
+
+        @PostMapping("/{entryId}/tag/new")
+        public ResponseEntity<String> addTagsToEntry(@AuthenticationPrincipal User user,
+                                                     @PathVariable Long entryId,
+                                                     @RequestBody Set<Long> tagIds) {
+            entryService.addTags(user, entryId, tagIds);
+            return ResponseEntity.ok("Added tags to entry");
+        }
+
+
         @GetMapping("/uuid/{uuid}")
         public ResponseEntity<EntryResponse> getEntryByUuid(@AuthenticationPrincipal User user,
                                                             @PathVariable UUID uuid) {
@@ -119,15 +136,6 @@
 
             entryService.addEntry(user, entryDto);
             return ResponseEntity.status(HttpStatus.CREATED).body("Entry created successfully");
-        }
-
-        @PostMapping("/{entryId}/tag/new")
-        public ResponseEntity<String> addTagsToEntry(@AuthenticationPrincipal User user,
-                                                     @PathVariable Long entryId,
-                                                     @RequestBody Set<Long> tagIds)
-        {
-            entryService.addTags(user, entryId, tagIds);
-            return ResponseEntity.ok("Added tags to entry");
         }
 
         @PutMapping("/{id}/update")
