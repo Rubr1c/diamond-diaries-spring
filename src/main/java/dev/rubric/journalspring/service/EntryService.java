@@ -141,11 +141,11 @@ public class EntryService {
         return entries;
     }
 
-    public List<Entry> getUserEntriesByTags(User user, Set<Long> tagIds, int offset, int count){
+    public List<Entry> getUserEntriesByTags(User user, Set<String> tagNames, int offset, int count){
         PageRequest pageRequest = PageRequest.of(offset, count, Sort.by(Sort.Direction.DESC, "journalDate"));
 
-        Set<Tag> tags = tagIds.stream()
-                .map(tagRepository::findById)
+        Set<Tag> tags = tagNames.stream()
+                .map(tagRepository::findByName)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toSet());
@@ -281,7 +281,7 @@ public class EntryService {
         return entries;
     }
 
-    public void addTags(User user, Long entryId, Set<Long> tagIds) {
+    public void addTags(User user, Long entryId, Set<String> tagNames) {
         Entry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ApplicationException(
                         String.format("Entry with %d not found", entryId),
@@ -292,8 +292,9 @@ public class EntryService {
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
         }
-        Set<Tag> tags = tagIds.stream()
-                .map(tagRepository::findById)
+
+        Set<Tag> tags = tagNames.stream()
+                .map(tagRepository::findByName)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toSet());

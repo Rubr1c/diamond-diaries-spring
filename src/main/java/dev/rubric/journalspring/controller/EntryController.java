@@ -97,13 +97,13 @@
 
         @GetMapping("/tag")
         public ResponseEntity<List<EntryResponse>> getAllUserEntriesByTags(@AuthenticationPrincipal User user,
-                                                                           @RequestBody Set<Long> tagIds,
+                                                                           @RequestBody Set<String> tagNames,
                                                                            @RequestParam int offset,
                                                                            @RequestParam int size){
 
             logger.info("User {} is requesting all journal entries", user.getId());
 
-            List<EntryResponse> entries = entryService.getUserEntriesByTags(user, tagIds, offset, size)
+            List<EntryResponse> entries = entryService.getUserEntriesByTags(user, tagNames, offset, size)
                     .stream()
                     .map(EntryResponse::new)
                     .collect(Collectors.toList());
@@ -115,8 +115,8 @@
         @PostMapping("/{entryId}/tag/new")
         public ResponseEntity<String> addTagsToEntry(@AuthenticationPrincipal User user,
                                                      @PathVariable Long entryId,
-                                                     @RequestBody Set<Long> tagIds) {
-            entryService.addTags(user, entryId, tagIds);
+                                                     @RequestBody Set<String> tagNames) {
+            entryService.addTags(user, entryId, tagNames);
             return ResponseEntity.ok("Added tags to entry");
         }
 
