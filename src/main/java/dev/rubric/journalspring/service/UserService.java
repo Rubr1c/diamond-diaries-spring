@@ -79,6 +79,9 @@ public class UserService {
         if (updatedInfo.enabled2fa() != null) {
             user.setEnabled2fa(updatedInfo.enabled2fa());
         }
+        if (updatedInfo.username() != null) {
+            user.setUsername(updatedInfo.username());
+        }
 
         userRepository.save(user);
     }
