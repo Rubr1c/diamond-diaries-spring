@@ -92,4 +92,12 @@ public class SharedEntry {
     public boolean removeFromAllowedUsers(User user) {
         return this.allowedUsers.remove(user);
     }
+
+    public boolean isAllowAnyone() {
+        return allowAnyone;
+    }
+
+    public void setAllowAnyone(boolean allowAnyone) {
+        this.allowAnyone = allowAnyone;
+    }
 }

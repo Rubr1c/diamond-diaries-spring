@@ -189,13 +189,10 @@
         @GetMapping("/{id}/media")
         public ResponseEntity<List<MediaResponse>> getAllMediaForEntry(@AuthenticationPrincipal User user,
                                                                        @PathVariable Long id) {
-            logger.debug("Received request for media of entry {}", id);
-
-            entryService.verifyUserOwnsEntry(user, id);
 
             logger.debug("User {} is fetching all media for journal entry with id {}", user.getId(), id);
 
-            List<MediaResponse> mediaResponses = entryService.getMediaByEntryId(id);
+            List<MediaResponse> mediaResponses = entryService.getMediaByEntryId(user, id);
 
             return ResponseEntity.ok(mediaResponses);
         }

@@ -13,4 +13,5 @@ public interface SharedEntryRepository extends CrudRepository<SharedEntry, Long>
     Optional<SharedEntry> getByPublicId(UUID id);
 
     List<SharedEntry> getAllByEntry(Entry entry);
+    List<SharedEntry> getAllByEntryOrderByExpiryTimeDesc(Entry entry);
 }

@@ -1,22 +1,23 @@
 package dev.rubric.journalspring.service;
 
-import dev.rubric.journalspring.repository.TagRepository;
 import dev.rubric.journalspring.dto.EntryDto;
 import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.*;
 import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.MediaRepository;
+import dev.rubric.journalspring.repository.SharedEntryRepository;
+import dev.rubric.journalspring.repository.TagRepository;
 import dev.rubric.journalspring.response.MediaResponse;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
@@ -36,6 +37,8 @@ public class EntryService {
     private final S3Service s3Service;
     private final SearchService searchService;
     private final TagRepository tagRepository;
+    private final SharedEntryService sharedEntryService;
+    private final SharedEntryRepository sharedEntryRepository;
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -46,7 +49,7 @@ public class EntryService {
             MediaRepository mediaRepository,
             FolderService folderService,
             S3Service s3Service,
-            SearchService searchService, TagRepository tagRepository) {
+            SearchService searchService, TagRepository tagRepository, SharedEntryService sharedEntryService, SharedEntryRepository sharedEntryRepository) {
         this.entryRepository = entryRepository;
         this.encryptionService = encryptionService;
         this.mediaRepository = mediaRepository;
@@ -54,6 +57,8 @@ public class EntryService {
         this.folderService = folderService;
         this.searchService = searchService;
         this.tagRepository = tagRepository;
+        this.sharedEntryService = sharedEntryService;
+        this.sharedEntryRepository = sharedEntryRepository;
     }
 
     public Entry addEntry(User user, EntryDto details) {
@@ -203,6 +208,8 @@ public class EntryService {
         }
 
         // Remove search tokens before deleting the entry
+        entry.getTags().clear();
+        sharedEntryService.removeSharedEntry(user, entryId);
         searchService.removeEntryTokens(entry);
         logger.debug("Search tokens removed for entry {}", entryId);
 
@@ -331,6 +338,7 @@ public class EntryService {
         return entry;
     }
 
+
     public void addEntryToFolder(User user, Long entryId, Long folderId) {
         Entry entry = verifyUserOwnsEntry(user, entryId);
         Folder folder = folderService.getFolder(user, folderId);
@@ -376,7 +384,8 @@ public class EntryService {
     }
 
     // Get all media for an entry with secure URLs
-    public List<MediaResponse> getMediaByEntryId(Long entryId) {
+    public List<MediaResponse> getMediaByEntryId(User user, Long entryId) {
+        sharedEntryService.userCanAccessEntry(user, entryId);
         List<Media> mediaList = mediaRepository.findAllByEntryId(entryId);
 
         return mediaList.stream()

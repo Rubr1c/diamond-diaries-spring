@@ -15,80 +15,104 @@ import org.springframework.stereotype.Service;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 @Service
 public class SharedEntryService {
 
-    private final EntryService entryService;
     private final UserRepository userRepository;
     private final SharedEntryRepository sharedEntryRepository;
     private final EncryptionService encryptionService;
+    private final EntryRepository entryRepository;
 
-    public SharedEntryService(EntryService entryService, UserRepository userRepository, SharedEntryRepository sharedEntryRepository, EncryptionService encryptionService) {
-        this.entryService = entryService;
+    public SharedEntryService(UserRepository userRepository, SharedEntryRepository sharedEntryRepository, EncryptionService encryptionService, EntryRepository entryRepository) {
         this.userRepository = userRepository;
         this.sharedEntryRepository = sharedEntryRepository;
         this.encryptionService = encryptionService;
+        this.entryRepository = entryRepository;
     }
 
 
     public UUID createSharedEntry(User user,
                                   SharedEntryDto input) {
-        Entry entry = entryService.getEntryById(user, input.entryId());
+        Entry entry = entryRepository.findById(input.entryId())
+                .orElseThrow(() -> new ApplicationException(
+                        "Entry not found", HttpStatus.NOT_FOUND));
 
-        List<SharedEntry> existingSharedEntries =
-                sharedEntryRepository.getAllByEntry(entry);
-
-        for (SharedEntry e: existingSharedEntries) {
-            if (e.getExpiryTime().isAfter(ZonedDateTime.now())) {
-                throw new ApplicationException(
-                      String.format("There already exists a shared entry for entry id '%d'", entry.getId()),
-                      HttpStatus.CONFLICT
-                );
-            }
+        if (!entry.getUser().getId().equals(user.getId())) {
+            throw new ApplicationException(
+                    "Not authorized to share this entry", HttpStatus.UNAUTHORIZED);
         }
 
-        List<User> allowedUsers = userRepository.findAllByEmail(input.allowedUsers());
-        allowedUsers.add(user);
+        List<SharedEntry> existing = sharedEntryRepository.getAllByEntry(entry);
+        existing.stream()
+                .filter(e -> e.getExpiryTime().isAfter(ZonedDateTime.now()))
+                .findAny()
+                .ifPresent(e -> { throw new ApplicationException(
+                        "Already have an active share for this entry", HttpStatus.CONFLICT);
+                });
 
-        SharedEntry sharedEntry = new SharedEntry(
+        List<User> allowed = userRepository.findAllByEmail(input.allowedUsers());
+        allowed.add(user);
+
+        SharedEntry s = new SharedEntry(
                 entry,
                 ZonedDateTime.now().plusDays(1),
-                allowedUsers,
-                input.allowAnyone() != null ? input.allowAnyone() : false
+                allowed,
+                Boolean.TRUE.equals(input.allowAnyone())
         );
-
-
-        sharedEntryRepository.save(sharedEntry);
-        return sharedEntry.getPublicId();
+        sharedEntryRepository.save(s);
+        return s.getPublicId();
     }
 
     public Entry accessSharedEntry(User user,
                                    UUID sharedEntryUUID) {
 
-        SharedEntry sEntry = sharedEntryRepository.getByPublicId(sharedEntryUUID)
+        SharedEntry s = sharedEntryRepository.getByPublicId(sharedEntryUUID)
                 .orElseThrow(() -> new ApplicationException(
-                        String.format("No shared entry with public id '%s' found", sharedEntryUUID), HttpStatus.NOT_FOUND
-                        )
+                        "Share not found", HttpStatus.NOT_FOUND));
+
+        boolean allowed = s.isAllowAnyone()
+                || s.getAllowedUsers().stream()
+                .map(User::getId)
+                .anyMatch(id -> id.equals(user.getId()));
+
+        if (!allowed) {
+            throw new ApplicationException(
+                    "Not authorized", HttpStatus.UNAUTHORIZED);
+        }
+
+        Entry e = s.getEntry();
+        // decrypt before handing it back
+        e.setContent(encryptionService.decrypt(e.getContent()));
+        return e;
+    }
+
+    public void userCanAccessEntry(User user, Long entryId) {
+       Entry entry = entryRepository.findById(entryId)
+                .orElseThrow(() -> new ApplicationException(
+                        "Entry not found", HttpStatus.NOT_FOUND)
                 );
+       
+        SharedEntry sEntry = 
+                sharedEntryRepository.getAllByEntryOrderByExpiryTimeDesc(entry).get(0);
+        
+        if (sEntry == null) throw new ApplicationException("Shared Entry not found", HttpStatus.NOT_FOUND);
+        
+        if (sEntry.getExpiryTime().isAfter(ZonedDateTime.now()))
+            throw new ApplicationException("Shared Entry expired", HttpStatus.NOT_FOUND);
 
         boolean isAllowed = sEntry.getAllowedUsers()
                 .stream()
                 .map(User::getId)
                 .anyMatch(id -> id.equals(user.getId()));
 
-        if (!isAllowed) {
+        if (!isAllowed && !sEntry.isAllowAnyone()) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED
             );
         }
-
-        Entry entry = sEntry.getEntry();
-        String decryptedContent = encryptionService.decrypt(entry.getContent());
-        entry.setContent(decryptedContent);
-        return entry;
+        
     }
 
     public void addUserToSharedEntry(User user,
@@ -119,9 +143,9 @@ public class SharedEntryService {
         sharedEntryRepository.save(sEntry);
     }
 
-    public void removeUserToSharedEntry(User user,
-                                        UUID sEntryUUID,
-                                        String targetEmail) {
+    public void removeUserFromSharedEntry(User user,
+                                          UUID sEntryUUID,
+                                          String targetEmail) {
         SharedEntry sEntry = sharedEntryRepository.getByPublicId(sEntryUUID)
                 .orElseThrow(() -> new ApplicationException(
                                 String.format("No shared entry with public id '%s' found", sEntryUUID), HttpStatus.NOT_FOUND
@@ -151,5 +175,18 @@ public class SharedEntryService {
         }
 
         sharedEntryRepository.save(sEntry);
+    }
+
+    public void removeSharedEntry(User user, Long entryId) {
+        Entry entry = entryRepository.findById(entryId)
+                .orElseThrow(() -> new ApplicationException(
+                        "Entry not found", HttpStatus.NOT_FOUND));
+
+        if (!entry.getUser().getId().equals(user.getId())) {
+            throw new ApplicationException(
+                    "Not your entry", HttpStatus.UNAUTHORIZED);
+        }
+        List<SharedEntry> list = sharedEntryRepository.getAllByEntry(entry);
+        sharedEntryRepository.deleteAll(list);
     }
 }

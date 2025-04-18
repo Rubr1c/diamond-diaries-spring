@@ -73,7 +73,7 @@ public class SharedEntryController {
         logger.debug("User '{}' is removing user '{}' to shared entry '{}'", user.getEmail(), email, id);
 
         sharedEntryService
-                .removeUserToSharedEntry(user, id, email);
+                .removeUserFromSharedEntry(user, id, email);
 
         return ResponseEntity.ok("User removed to entry");
     }
