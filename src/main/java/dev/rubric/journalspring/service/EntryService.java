@@ -8,6 +8,8 @@ import dev.rubric.journalspring.models.*;
 import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.MediaRepository;
 import dev.rubric.journalspring.response.MediaResponse;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -34,6 +36,8 @@ public class EntryService {
     private final S3Service s3Service;
     private final SearchService searchService;
     private final TagRepository tagRepository;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Autowired
     public EntryService(
@@ -104,6 +108,8 @@ public class EntryService {
                     HttpStatus.UNAUTHORIZED);
         }
 
+        entityManager.detach(entry);
+
         // Decrypt the content before returning
         String decryptedContent = encryptionService.decrypt(entry.getContent());
         entry.setContent(decryptedContent);
@@ -130,6 +136,7 @@ public class EntryService {
         PageRequest pageRequest = PageRequest.of(offset, count, Sort.by(Sort.Direction.DESC, "journalDate"));
         List<Entry> entries = entryRepository.findAllByUserOrderByDateCreatedDesc(user, pageRequest).getContent();
 
+        entityManager.detach(entries);
         // Decrypt all entries' content
         entries.forEach(entry -> {
             String decryptedContent = encryptionService.decrypt(entry.getContent());
@@ -153,7 +160,7 @@ public class EntryService {
 
 
         List<Entry> entries = entryRepository.findByUserAndTags(user, tags, pageRequest).getContent();
-
+        entityManager.detach(entries);
 
         entries.forEach(entry -> {
             String decryptedContent = encryptionService.decrypt(entry.getContent());
@@ -165,11 +172,6 @@ public class EntryService {
         return entries;
     }
 
-    public Set<Tag> getAllEntryTags(User user, Long entryId) {
-        Entry entry = verifyUserOwnsEntry(user, entryId);
-
-        return entry.getTags();
-    }
 
 
     public Entry getEntryByUuid(User user, UUID uuid) {
@@ -181,6 +183,10 @@ public class EntryService {
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
         }
+
+        entityManager.detach(entry);
+
+
         String decryptedContent = encryptionService.decrypt(entry.getContent());
         entry.setContent(decryptedContent);
         return entry;
@@ -271,6 +277,8 @@ public class EntryService {
                     String.format("No entries found for %d-%02d", date.getYear(), date.getMonthValue()),
                     HttpStatus.NOT_FOUND);
         }
+        
+        entityManager.detach(entries);
 
         // Decrypt all entries' content
         entries.forEach(entry -> {
