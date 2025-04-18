@@ -136,7 +136,7 @@ public class EntryService {
         PageRequest pageRequest = PageRequest.of(offset, count, Sort.by(Sort.Direction.DESC, "journalDate"));
         List<Entry> entries = entryRepository.findAllByUserOrderByDateCreatedDesc(user, pageRequest).getContent();
 
-        entityManager.detach(entries);
+
         // Decrypt all entries' content
         entries.forEach(entry -> {
             String decryptedContent = encryptionService.decrypt(entry.getContent());
@@ -160,7 +160,6 @@ public class EntryService {
 
 
         List<Entry> entries = entryRepository.findByUserAndTags(user, tags, pageRequest).getContent();
-        entityManager.detach(entries);
 
         entries.forEach(entry -> {
             String decryptedContent = encryptionService.decrypt(entry.getContent());
@@ -184,11 +183,10 @@ public class EntryService {
                     HttpStatus.UNAUTHORIZED);
         }
 
-        entityManager.detach(entry);
-
 
         String decryptedContent = encryptionService.decrypt(entry.getContent());
         entry.setContent(decryptedContent);
+
         return entry;
     }
     public void deleteEntry(User user, Long entryId) {
@@ -278,7 +276,6 @@ public class EntryService {
                     HttpStatus.NOT_FOUND);
         }
         
-        entityManager.detach(entries);
 
         // Decrypt all entries' content
         entries.forEach(entry -> {
