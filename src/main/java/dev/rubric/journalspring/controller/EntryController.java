@@ -89,11 +89,6 @@
             return ResponseEntity.ok(entries);
         }
 
-        @GetMapping("{id}/tags")
-        public ResponseEntity<Set<Tag>> getAllEntryTags(@AuthenticationPrincipal User user,
-                                                        @PathVariable Long id) {
-            return ResponseEntity.ok(entryService.getAllEntryTags(user, id));
-        }
 
         @GetMapping("/tag")
         public ResponseEntity<List<EntryResponse>> getAllUserEntriesByTags(@AuthenticationPrincipal User user,

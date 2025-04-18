@@ -83,18 +83,34 @@ public class AiService {
                     ". Generate a concise one-line journaling prompt that draws inspiration from these titles. \" }]}]}";
         }
         else {
-            Map<String, String> contentMap = entryService.getUserEntries(user, 0, 20)
+            Map<String, List<String>> contentMap = entryService.getUserEntries(user, 0, 20)
                     .stream()
-                    .collect(Collectors.toMap(Entry::getTitle, Entry::getContent));
+                    .collect(Collectors.groupingBy(
+                            Entry::getTitle,
+                            Collectors.mapping(Entry::getContent, Collectors.toList())
+                    ));
+
+            StringBuilder entriesPayload = new StringBuilder();
+            for (var entry : contentMap.entrySet()) {
+                String title = entry.getKey();
+                List<String> contents = entry.getValue();
+                for (String content : contents) {
+                    entriesPayload
+                            .append("Title: ").append(title)
+                            .append(" | Content: ").append(content)
+                            .append(". ");
+                }
+            }
 
             logger.info("Making prompt with titles and content for user {}", user.getId(
 
             ));
 
-            jsonRequest = "{ \"contents\": [{ \"parts\": [{ \"text\": \"" +
-                    BASE_PROMPT +
-                    "The user's last 20 entries with titles and content are: " + contentMap +
-                    ". Generate a concise one-line journaling prompt that incorporates elements from these titles and content for inspiration.\" }]}]}";
+            jsonRequest = "{ \"contents\": [{ \"parts\": [{ \"text\": \""
+                    + BASE_PROMPT
+                    + "The user's last 20 entries with titles and content are: "
+                    + entriesPayload.toString().trim()
+                    + ". Generate a concise one-line journaling prompt that incorporates elements from these titles and content for inspiration.\" }]}]}";
         }
 
 
