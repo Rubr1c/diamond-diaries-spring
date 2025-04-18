@@ -23,13 +23,13 @@ public class SharedEntryService {
     private final EntryService entryService;
     private final UserRepository userRepository;
     private final SharedEntryRepository sharedEntryRepository;
-    private final EntryRepository entryRepository;
+    private final EncryptionService encryptionService;
 
-    public SharedEntryService(EntryService entryService, UserRepository userRepository, SharedEntryRepository sharedEntryRepository, EntryRepository entryRepository) {
+    public SharedEntryService(EntryService entryService, UserRepository userRepository, SharedEntryRepository sharedEntryRepository, EncryptionService encryptionService) {
         this.entryService = entryService;
         this.userRepository = userRepository;
         this.sharedEntryRepository = sharedEntryRepository;
-        this.entryRepository = entryRepository;
+        this.encryptionService = encryptionService;
     }
 
 
@@ -73,14 +73,22 @@ public class SharedEntryService {
                         )
                 );
 
-        if (!sEntry.getAllowedUsers().contains(user)) {
+        boolean isAllowed = sEntry.getAllowedUsers()
+                .stream()
+                .map(User::getId)
+                .anyMatch(id -> id.equals(user.getId()));
+
+        if (!isAllowed) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED
             );
         }
 
-        return sEntry.getEntry();
+        Entry entry = sEntry.getEntry();
+        String decryptedContent = encryptionService.decrypt(entry.getContent());
+        entry.setContent(decryptedContent);
+        return entry;
     }
 
     public void addUserToSharedEntry(User user,
