@@ -8,6 +8,7 @@ import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.MediaRepository;
 import dev.rubric.journalspring.repository.SharedEntryRepository;
 import dev.rubric.journalspring.repository.TagRepository;
+import dev.rubric.journalspring.response.EntryResponse;
 import dev.rubric.journalspring.response.MediaResponse;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -427,7 +428,7 @@ public class EntryService {
         mediaRepository.delete(media);
     }
 
-    public Map<LocalDate, List<Long>> getEntryIdsByTimeRange(User user, LocalDate startDate, LocalDate endDate) {
+    public List<EntryResponse> getEntryIdsByTimeRange(User user, LocalDate startDate, LocalDate endDate) {
         if (startDate.isAfter(endDate)) {
             throw new ApplicationException("Start date cannot be after end date", HttpStatus.BAD_REQUEST);
         }
@@ -440,18 +441,15 @@ public class EntryService {
         List<Entry> entries = entryRepository.findByDateCreatedBetweenAndUser(startDateTime, endDateTime, user);
 
         if (entries == null || entries.isEmpty()) {
-            throw new ApplicationException(
-                    String.format("No entries found between %s and %s",
-                            startDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
-                            endDate.format(DateTimeFormatter.ISO_LOCAL_DATE)),
-                    HttpStatus.NOT_FOUND);
+            return new ArrayList<>();
         }
 
-        return entries.stream()
-                .collect(Collectors.groupingBy(
-                        entry -> entry.getDateCreated().toLocalDate(),
-                        Collectors.mapping(Entry::getId, Collectors.toList())
-                ));
+        for (Entry entry: entries) {
+            String decryptedContent = encryptionService.decrypt(entry.getContent());
+            entry.setContent(decryptedContent);
+        }
+
+        return entries.stream().map(EntryResponse::new).toList();
 
     }
 

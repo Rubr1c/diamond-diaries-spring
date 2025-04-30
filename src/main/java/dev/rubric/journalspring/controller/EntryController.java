@@ -250,15 +250,16 @@ public class EntryController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete media");
         }
     }
-    @GetMapping("/ids-by-time-range")
-    public ResponseEntity<Map<LocalDate, List<Long>>> getEntryIdsByTimeRange(
+
+    @GetMapping("/time-range")
+    public ResponseEntity<List<EntryResponse>> getEntryIdsByTimeRange(
             @AuthenticationPrincipal User user,
             @RequestParam LocalDate startDate,
             @RequestParam LocalDate endDate) {
 
         logger.info("User {} is requesting entries for date range: {} : {}", user.getId(), startDate, endDate);
 
-        Map<LocalDate, List<Long>> result = entryService.getEntryIdsByTimeRange(user, startDate, endDate);
+        List<EntryResponse> result = entryService.getEntryIdsByTimeRange(user, startDate, endDate);
         return ResponseEntity.ok(result);
     }
 }
