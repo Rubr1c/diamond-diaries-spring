@@ -214,8 +214,6 @@ public class EntryController {
 
         logger.debug("User '{}' adding new media to entry '{}'", user.getEmail(), id);
 
-        entryService.verifyUserOwnsEntry(user, id);
-
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File must not be empty");
         }
