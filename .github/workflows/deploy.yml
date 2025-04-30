@@ -49,8 +49,8 @@ jobs:
 
           # Pull the latest changes from the main branch
           echo "Pulling latest changes..."
-          git checkout main # Ensure we are on main
-          git pull origin main
+          git checkout master # Ensure we are on main
+          git pull origin master
 
           # (Optional but Recommended) Stop existing containers if using Docker Compose
           echo "Stopping existing services (if any)..."
