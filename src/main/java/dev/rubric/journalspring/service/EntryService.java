@@ -320,6 +320,7 @@ public class EntryService {
                 );
 
         entry.getTags().remove(tag);
+        entryRepository.save(entry);
     }
 
     /**
