@@ -309,7 +309,17 @@ public class EntryService {
         // Re-index the entry after adding tags
         String decryptedContent = encryptionService.decrypt(entry.getContent());
         searchService.indexEntry(entry, decryptedContent);
+    }
 
+    public void removeTag(User user, Long entryId, String tagName) {
+        Entry entry = verifyUserOwnsEntry(user, entryId);
+
+        Tag tag = tagRepository.findByName(tagName)
+                .orElseThrow(() -> new ApplicationException(
+                        "Tag does nto exist for entry", HttpStatus.NOT_FOUND)
+                );
+
+        entry.getTags().remove(tag);
     }
 
     /**

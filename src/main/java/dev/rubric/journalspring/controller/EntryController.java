@@ -115,6 +115,14 @@
             return ResponseEntity.ok("Added tags to entry");
         }
 
+        @DeleteMapping("/{entryId}/tag/{tagName}")
+        public ResponseEntity<String> removeTagFromEntry(@AuthenticationPrincipal User user,
+                                                     @PathVariable Long entryId,
+                                                     @PathVariable String tagName) {
+            entryService.removeTag(user, entryId, tagName);
+            return ResponseEntity.ok("removed tag from entry");
+        }
+
 
         @GetMapping("/uuid/{uuid}")
         public ResponseEntity<EntryResponse> getEntryByUuid(@AuthenticationPrincipal User user,
