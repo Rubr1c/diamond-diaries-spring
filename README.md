@@ -1,1 +1,1 @@
-# Journal App
+# Diamond Diaries
