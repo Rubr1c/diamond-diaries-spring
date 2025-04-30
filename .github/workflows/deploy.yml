@@ -3,68 +3,65 @@ name: Deploy to EC2 via SSH
 
 on:
   push:
-    branches: [ "master" ] # Trigger on push to the main branch
+    branches: [ "master" ] # Adjust if your branch is 'main'
 
 jobs:
   deploy:
     name: Deploy to EC2
     runs-on: ubuntu-latest
+    # environment: production # Uncomment if using environment secrets
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      # No need to fetch full history unless needed for build steps later
       with:
         fetch-depth: 1
 
     - name: Set up SSH key
       uses: webfactory/ssh-agent@v0.9.0
       with:
-        ssh-private-key: ${{ secrets.EC2_SSH_KEY }} # Use the secret
+        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
     - name: Add EC2 host to known_hosts
       run: |
-        # Create .ssh directory if it doesn't exist
         mkdir -p ~/.ssh
-        # Add the server's host key to known_hosts to avoid prompt
-        # Use ssh-keyscan; adjust port if SSH runs on non-standard port
         ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-        # Set correct permissions
         chmod 644 ~/.ssh/known_hosts
 
     - name: Deploy to EC2
       env:
         HOST: ${{ secrets.EC2_HOST }}
         USER: ${{ secrets.EC2_USER }}
-        PROJECT_PATH: ${{ secrets.PROJECT_PATH }} # Get project path from secrets
+        PROJECT_PATH: ${{ secrets.PROJECT_PATH }}
+        DOT_ENV_CONTENT: ${{ secrets.DOT_ENV_FILE }} # Get .env content from secret
       run: |
         echo "Connecting to ${USER}@${HOST}"
         echo "Executing deployment commands in ${PROJECT_PATH}"
 
-        # Connect via SSH and execute deployment commands
         ssh ${USER}@${HOST} << EOF
           # Navigate to the project directory
           cd ${PROJECT_PATH}
           echo "Current directory: \$(pwd)"
 
-          # Pull the latest changes from the main branch
+          # --- Create or overwrite the .env file ---
+          echo "Writing .env file..."
+          # Use printf to handle potential special characters and newlines correctly
+          printf "%s\n" "${DOT_ENV_CONTENT}" > .env
+          # Secure the .env file (optional but good practice)
+          chmod 600 .env
+
+          # Pull the latest changes from the correct branch
           echo "Pulling latest changes..."
-          git checkout master # Ensure we are on main
+          git checkout master # Adjust if your branch is 'main'
           git pull origin master
 
-          # (Optional but Recommended) Stop existing containers if using Docker Compose
+          # Stop existing containers if using Docker Compose
           echo "Stopping existing services (if any)..."
           docker-compose down
 
-          # Rebuild and restart application (e.g., using Docker Compose)
-          # The --build flag ensures images are rebuilt if Dockerfile changed
+          # Rebuild and restart application
           echo "Building and starting services..."
           docker-compose up --build -d
-
-          # (Optional) Clean up unused Docker images/volumes
-          # echo "Cleaning up Docker..."
-          # docker image prune -af
-          # docker volume prune -f
 
           echo "Deployment finished!"
         EOF
