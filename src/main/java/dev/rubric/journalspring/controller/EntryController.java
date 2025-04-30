@@ -90,7 +90,7 @@
         }
 
 
-        @GetMapping("/tag")
+        @PostMapping("/tag")
         public ResponseEntity<List<EntryResponse>> getAllUserEntriesByTags(@AuthenticationPrincipal User user,
                                                                            @RequestBody List<String> tagNames,
                                                                            @RequestParam int offset,
