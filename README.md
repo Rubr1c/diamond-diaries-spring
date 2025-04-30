@@ -1,5 +1,9 @@
 # Diamond Diaries
 
+## Reqs
+
+-  docker
+
 ## How to run
 
 ```
