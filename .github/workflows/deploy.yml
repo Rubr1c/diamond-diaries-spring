@@ -1,67 +1,65 @@
-# .github/workflows/deploy-ssh.yml
 name: Deploy to EC2 via SSH
 
 on:
   push:
-    branches: [ "master" ] # Adjust if your branch is 'main'
+    branches: [ "master" ]
 
 jobs:
   deploy:
     name: Deploy to EC2
     runs-on: ubuntu-latest
-    # environment: production # Uncomment if using environment secrets
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 1
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1  # shallow clone; remote reset handles sync
 
-    - name: Set up SSH key
-      uses: webfactory/ssh-agent@v0.9.0
-      with:
-        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-    - name: Add EC2 host to known_hosts
-      run: |
-        mkdir -p ~/.ssh
-        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-        chmod 644 ~/.ssh/known_hosts
+      - name: Add EC2 host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
-    - name: Deploy to EC2
-      env:
-        HOST: ${{ secrets.EC2_HOST }}
-        USER: ${{ secrets.EC2_USER }}
-        PROJECT_PATH: ${{ secrets.PROJECT_PATH }}
-        DOT_ENV_CONTENT: ${{ secrets.DOT_ENV_FILE }} # Get .env content from secret
-      run: |
-        echo "Connecting to ${USER}@${HOST}"
-        echo "Executing deployment commands in ${PROJECT_PATH}"
+      - name: Deploy to EC2
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+          PROJECT_PATH: ${{ secrets.PROJECT_PATH }}
+          DOT_ENV_CONTENT: ${{ secrets.DOT_ENV_FILE }}
+        run: |
+          echo "Connecting to ${USER}@${HOST}"
+          echo "Deploying to ${PROJECT_PATH} on remote"
 
-        ssh ${USER}@${HOST} << EOF
-          # Navigate to the project directory
-          cd ${PROJECT_PATH}
-          echo "Current directory: \$(pwd)"
+          ssh ${USER}@${HOST} << EOF
+            set -e
+            # Navigate to project directory
+            cd ${PROJECT_PATH}
+            echo "Current directory: $(pwd)"
 
-          # --- Create or overwrite the .env file ---
-          echo "Writing .env file..."
-          # Use printf to handle potential special characters and newlines correctly
-          printf "%s\n" "${DOT_ENV_CONTENT}" > .env
-          # Secure the .env file (optional but good practice)
-          chmod 600 .env
+            # Reset local repo to match remote
+            echo "Resetting code to origin/master..."
+            git fetch origin master
+            git reset --hard origin/master
+            git clean -fd
 
-          # Pull the latest changes from the correct branch
-          echo "Pulling latest changes..."
-          git checkout master # Adjust if your branch is 'main'
-          git pull origin master
+            # Write .env file
+            echo "Writing .env file..."
+            printf "%s\n" "${DOT_ENV_CONTENT}" > .env
+            chmod 600 .env
 
-          # Stop existing containers if using Docker Compose
-          echo "Stopping existing services (if any)..."
-          docker-compose down
+            # Tear down any existing services, including orphans
+            echo "Stopping existing services..."
+            docker-compose down --remove-orphans
 
-          # Rebuild and restart application
-          echo "Building and starting services..."
-          docker-compose up --build -d
+            # Build and start fresh
+            echo "Building and starting services..."
+            docker-compose up --build -d
 
-          echo "Deployment finished!"
-        EOF
+            echo "Deployment finished!"
+          EOF
