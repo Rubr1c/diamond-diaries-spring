@@ -399,7 +399,18 @@ public class EntryService {
 
     // Get all media for an entry with secure URLs
     public List<MediaResponse> getMediaByEntryId(User user, Long entryId) {
-        sharedEntryService.userCanAccessEntry(user, entryId);
+
+
+        try {
+            verifyUserOwnsEntry(user, entryId);
+        } catch (ApplicationException ex) {
+            if (ex.getStatus() == HttpStatus.UNAUTHORIZED) {
+                sharedEntryService.userCanAccessEntry(user, entryId);
+            } else {
+                throw ex;
+            }
+        }
+
         List<Media> mediaList = mediaRepository.findAllByEntryId(entryId);
 
         return mediaList.stream()
