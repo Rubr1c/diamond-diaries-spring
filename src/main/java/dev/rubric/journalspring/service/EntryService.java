@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -321,6 +322,7 @@ public class EntryService {
 
         entry.getTags().remove(tag);
         entryRepository.save(entry);
+
     }
 
     /**
@@ -423,6 +425,34 @@ public class EntryService {
 
         // Remove from database
         mediaRepository.delete(media);
+    }
+
+    public Map<LocalDate, List<Long>> getEntryIdsByTimeRange(User user, LocalDate startDate, LocalDate endDate) {
+        if (startDate.isAfter(endDate)) {
+            throw new ApplicationException("Start date cannot be after end date", HttpStatus.BAD_REQUEST);
+        }
+
+        ZoneId zoneId = ZoneId.systemDefault();
+
+        ZonedDateTime startDateTime = startDate.atStartOfDay(zoneId);
+        ZonedDateTime endDateTime = endDate.atTime(23, 59, 59).atZone(zoneId);
+
+        List<Entry> entries = entryRepository.findByDateCreatedBetweenAndUser(startDateTime, endDateTime, user);
+
+        if (entries == null || entries.isEmpty()) {
+            throw new ApplicationException(
+                    String.format("No entries found between %s and %s",
+                            startDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                            endDate.format(DateTimeFormatter.ISO_LOCAL_DATE)),
+                    HttpStatus.NOT_FOUND);
+        }
+
+        return entries.stream()
+                .collect(Collectors.groupingBy(
+                        entry -> entry.getDateCreated().toLocalDate(),
+                        Collectors.mapping(Entry::getId, Collectors.toList())
+                ));
+
     }
 
 }
