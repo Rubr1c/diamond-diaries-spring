@@ -41,7 +41,7 @@ public class FolderService {
         return folder;
     }
 
-    public Folder getFolderByPublicID(User user, UUID publicId) {
+    public Folder getFolderByPublicId(User user, UUID publicId) {
         Folder folder = folderRepository.getByPublicId(publicId)
                 .orElseThrow(() -> new ApplicationException(
                         String.format("folder with id '%d' does not exist", publicId),

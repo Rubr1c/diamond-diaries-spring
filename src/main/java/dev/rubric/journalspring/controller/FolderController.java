@@ -53,7 +53,7 @@ public class FolderController {
 
         logger.debug("User '{}' is trying to get folder with id '{}'", user.getEmail(), publicId);
 
-        Folder folder = folderService.getFolderByPublicID(user, publicId);
+        Folder folder = folderService.getFolderByPublicId(user, publicId);
 
         return ResponseEntity.ok(new FolderResponse(folder));
     }

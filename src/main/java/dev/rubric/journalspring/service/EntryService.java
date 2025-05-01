@@ -25,7 +25,6 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -371,13 +370,23 @@ public class EntryService {
     public List<Entry> getAllEntriesFromFolder(User user, Long folderId) {
         Folder folder = folderService.getFolder(user, folderId);
 
-        return entryRepository.findAllByFolder(folder);
+        List<Entry> entries = entryRepository.findAllByFolder(folder);
+        for (Entry entry: entries) {
+            String decryptedContent = encryptionService.decrypt(entry.getContent());
+            entry.setContent(decryptedContent);
+        }
+        return entries;
     }
 
     public List<Entry> getAllEntriesFromFolderByPublicId(User user, UUID publicFolderId) {
-        Folder folder = folderService.getFolderByPublicID(user, publicFolderId);
+        Folder folder = folderService.getFolderByPublicId(user, publicFolderId);
 
-        return entryRepository.findAllByFolder(folder);
+        List<Entry> entries = entryRepository.findAllByFolder(folder);
+        for (Entry entry: entries) {
+            String decryptedContent = encryptionService.decrypt(entry.getContent());
+            entry.setContent(decryptedContent);
+        }
+        return entries;
     }
 
     public String uploadMedia(User user, Long entryId, MultipartFile file, MediaType mediaType) {
