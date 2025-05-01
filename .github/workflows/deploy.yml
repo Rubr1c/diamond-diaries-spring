@@ -42,6 +42,10 @@ jobs:
             cd ${PROJECT_PATH}
             echo "Current directory: $(pwd)"
 
+            echo "Cleaning up old Docker data…"
+            docker system prune -af        # remove all stopped containers, unused images, build cache
+            docker volume prune -f 
+
             # Reset local repo to match remote
             echo "Resetting code to origin/master..."
             git fetch origin master
