@@ -173,7 +173,7 @@ public class SharedEntryService {
 
         if (!sEntry.removeFromAllowedUsers(target)) {
             throw new ApplicationException(
-                    String.format("User '%s' already does not have access to entry"),
+                    String.format("User '%s' already does not have access to entry", targetEmail),
                     HttpStatus.NOT_FOUND
             );
         }
