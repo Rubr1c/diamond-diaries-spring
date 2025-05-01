@@ -41,7 +41,7 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping(value = "/upload/profile-picture", consumes = MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/profile-picture/upload", consumes = MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadProfilePicture(@AuthenticationPrincipal User user,
                                                        @RequestParam("profilePicture") MultipartFile profilePicture) {
 
@@ -65,7 +65,7 @@ public class UserController {
         }
     }
 
-    @DeleteMapping
+    @DeleteMapping("/profile-picture")
     public ResponseEntity<String> deleteProfilePicture(@AuthenticationPrincipal User user){
 
         if(user.getProfilePicture() != null){
