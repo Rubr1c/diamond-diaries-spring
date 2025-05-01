@@ -23,7 +23,8 @@ jobs:
       - name: Add EC2 host to known_hosts
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          # grab the EC2 host’s SSH public keys (rsa/ecdsa/ed25519) and ignore errors
+          ssh-keyscan -t rsa,ecdsa,ed25519 -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
           chmod 644 ~/.ssh/known_hosts
 
       - name: Deploy to EC2
@@ -42,30 +43,25 @@ jobs:
             ${USER}@${HOST} << 'EOF'
             set -e
 
-            # Trust GitHub for non-interactive git fetch
+            # trust GitHub so `git fetch` never prompts
             mkdir -p ~/.ssh
-            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+            ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null || true
 
-            # Navigate to project directory
             cd ${PROJECT_PATH}
             echo "Current directory: $(pwd)"
 
-            # Reset local repo to match remote
             echo "Resetting code to origin/master..."
             git fetch origin master
             git reset --hard origin/master
             git clean -fd
 
-            # Write .env file
             echo "Writing .env file..."
             printf "%s\n" "${DOT_ENV_CONTENT}" > .env
             chmod 600 .env
 
-            # Tear down any existing services, including orphans
             echo "Stopping existing services..."
             docker-compose down --remove-orphans
 
-            # Build and start fresh
             echo "Building and starting services..."
             docker-compose up --build -d
 
