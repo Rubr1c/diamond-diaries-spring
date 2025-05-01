@@ -2,7 +2,7 @@ name: Deploy to EC2 via SSH
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
   deploy:
@@ -36,8 +36,16 @@ jobs:
           echo "Connecting to ${USER}@${HOST}"
           echo "Deploying to ${PROJECT_PATH} on remote"
 
-          ssh ${USER}@${HOST} << EOF
+          ssh -tt -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=4 \
+            ${USER}@${HOST} << 'EOF'
             set -e
+
+            # Trust GitHub for non-interactive git fetch
+            mkdir -p ~/.ssh
+            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+
             # Navigate to project directory
             cd ${PROJECT_PATH}
             echo "Current directory: $(pwd)"
