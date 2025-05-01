@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.ZonedDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "folders")
@@ -11,6 +12,10 @@ public class Folder {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "public_id")
+    private UUID publicId;
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -25,6 +30,7 @@ public class Folder {
     public Folder(User user, String name) {
         this.user = user;
         this.name = name;
+        this.publicId = UUID.randomUUID();
     }
 
     public Folder() {}
@@ -57,4 +63,7 @@ public class Folder {
         return createdAt;
     }
 
+    public UUID getPublicId() {
+        return publicId;
+    }
 }
