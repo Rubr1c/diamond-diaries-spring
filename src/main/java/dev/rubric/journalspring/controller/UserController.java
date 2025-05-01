@@ -85,7 +85,7 @@ public class UserController {
 
     @PutMapping("/update/settings")
     public ResponseEntity<String> updateUserSettings(@AuthenticationPrincipal User user,
-                                                     UpdateUserDto updatedInfo) {
+                                                     @RequestBody UpdateUserDto updatedInfo) {
         userService.updateUser(user, updatedInfo);
 
         return ResponseEntity.ok("Updated user");
