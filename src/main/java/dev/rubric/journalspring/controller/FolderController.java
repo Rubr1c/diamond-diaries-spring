@@ -12,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/folder")
@@ -42,6 +43,17 @@ public class FolderController {
         logger.debug("User '{}' is trying to get folder with id '{}'", user.getEmail(), id);
 
         Folder folder = folderService.getFolder(user, id);
+
+        return ResponseEntity.ok(new FolderResponse(folder));
+    }
+
+    @GetMapping("/public/{publicId}")
+    public ResponseEntity<FolderResponse> getFolderByPublicId(@AuthenticationPrincipal User user,
+                                                    @PathVariable UUID publicId) {
+
+        logger.debug("User '{}' is trying to get folder with id '{}'", user.getEmail(), publicId);
+
+        Folder folder = folderService.getFolderByPublicID(user, publicId);
 
         return ResponseEntity.ok(new FolderResponse(folder));
     }

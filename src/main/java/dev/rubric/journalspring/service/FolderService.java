@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class FolderService {
@@ -28,6 +29,22 @@ public class FolderService {
         Folder folder = folderRepository.findById(id)
                 .orElseThrow(() -> new ApplicationException(
                         String.format("folder with id '%d' does not exist", id),
+                        HttpStatus.NOT_FOUND)
+                );
+
+        if (!folder.getUser().getId().equals(user.getId())) {
+            throw new ApplicationException(
+                    String.format("User with id %d is not authorized", user.getId()),
+                    HttpStatus.UNAUTHORIZED);
+        }
+
+        return folder;
+    }
+
+    public Folder getFolderByPublicID(User user, UUID publicId) {
+        Folder folder = folderRepository.getByPublicId(publicId)
+                .orElseThrow(() -> new ApplicationException(
+                        String.format("folder with id '%d' does not exist", publicId),
                         HttpStatus.NOT_FOUND)
                 );
 
