@@ -195,6 +195,21 @@ public class EntryController {
         return ResponseEntity.ok(entries);
     }
 
+    @GetMapping("/folder/public/{folderPublicId}")
+    public ResponseEntity<List<EntryResponse>> getAllFromFolderByPublicId(@AuthenticationPrincipal User user,
+                                                                @PathVariable UUID folderPublicId) {
+
+        logger.debug("User '{}' is getting all entries from folder '{}'", user.getEmail(), folderPublicId);
+
+        List<EntryResponse> entries = entryService
+                .getAllEntriesFromFolderByPublicId(user, folderPublicId)
+                .stream()
+                .map(EntryResponse::new)
+                .toList();
+
+        return ResponseEntity.ok(entries);
+    }
+
     @GetMapping("/{id}/media")
     public ResponseEntity<List<MediaResponse>> getAllMediaForEntry(@AuthenticationPrincipal User user,
                                                                    @PathVariable Long id) {

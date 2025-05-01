@@ -374,6 +374,12 @@ public class EntryService {
         return entryRepository.findAllByFolder(folder);
     }
 
+    public List<Entry> getAllEntriesFromFolderByPublicId(User user, UUID publicFolderId) {
+        Folder folder = folderService.getFolderByPublicID(user, publicFolderId);
+
+        return entryRepository.findAllByFolder(folder);
+    }
+
     public String uploadMedia(User user, Long entryId, MultipartFile file, MediaType mediaType) {
         Entry entry = getEntryById(user, entryId);
 
