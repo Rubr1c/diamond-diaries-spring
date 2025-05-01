@@ -126,7 +126,7 @@ public class SharedEntryService {
 
         Entry entry = sEntry.getEntry();
 
-        if (!entry.getUser().equals(user)) {
+        if (!entry.getUser().getId().equals(user.getId())) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
@@ -154,7 +154,7 @@ public class SharedEntryService {
 
         Entry entry = sEntry.getEntry();
 
-        if (!entry.getUser().equals(user)) {
+        if (!entry.getUser().getId().equals(user.getId())) {
             throw new ApplicationException(
                     String.format("User with id %d is not authorized", user.getId()),
                     HttpStatus.UNAUTHORIZED);
