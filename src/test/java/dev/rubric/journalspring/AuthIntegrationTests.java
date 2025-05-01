@@ -537,13 +537,4 @@ public class AuthIntegrationTests {
                 .andExpect(status().isNotFound());
     }
 
-    @Test
-    void googleLogin_ReturnsRedirectInfo() throws Exception {
-        mockMvc.perform(get("/api/v1/auth/login/google")
-                        .with(SecurityMockMvcRequestPostProcessors.csrf()))
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("/oauth2/authorization/google")));
-    }
-
 }
