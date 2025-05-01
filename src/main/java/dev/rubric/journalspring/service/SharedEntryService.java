@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -51,8 +52,11 @@ public class SharedEntryService {
                         "Already have an active share for this entry", HttpStatus.CONFLICT);
                 });
 
-        List<User> allowed = userRepository.findAllByEmail(input.allowedUsers());
+        List<User> allowedUsersFromInput = userRepository.findAllByEmail(input.allowedUsers());
+        List<User> allowed = new ArrayList<>(allowedUsersFromInput); 
+
         allowed.add(user);
+        
 
         SharedEntry s = new SharedEntry(
                 entry,
