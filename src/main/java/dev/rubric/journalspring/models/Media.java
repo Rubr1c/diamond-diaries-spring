@@ -23,13 +23,25 @@ public class Media {
     @Column(name = "s3_key", nullable = false, length = 2048)
     private String s3Key;
 
-    public Media(Entry entry, String url, MediaType type) {
+    @Column(nullable = false)
+    private String filename;
+
+    public Media(Entry entry, String url, MediaType type, String filename) {
         this.entry = entry;
         this.url = url;
         this.type = type;
+        this.filename = filename;
     }
 
     public Media() {}
+
+    public String getFilename() {
+        return filename;
+    }
+
+    public void setFilename(String filename) {
+        this.filename = filename;
+    }
 
     public String getS3Key() {
         return s3Key;

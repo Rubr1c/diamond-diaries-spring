@@ -3,6 +3,7 @@ package dev.rubric.journalspring.controller;
 import dev.rubric.journalspring.dto.EntryDto;
 import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
+import dev.rubric.journalspring.models.Media;
 import dev.rubric.journalspring.models.Tag;
 import dev.rubric.journalspring.models.User;
 import dev.rubric.journalspring.response.EntryResponse;
@@ -222,7 +223,7 @@ public class EntryController {
     }
 
     @PostMapping(value = "/{id}/media/new", consumes = MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> uploadMediaToEntry(@AuthenticationPrincipal User user,
+    public ResponseEntity<?> uploadMediaToEntry(@AuthenticationPrincipal User user,
                                                      @PathVariable Long id,
                                                      @RequestParam("mediaType") MediaType mediaType,
                                                      @RequestParam("file") MultipartFile file) {
@@ -235,8 +236,8 @@ public class EntryController {
 
         try {
 
-            String fileUrl = entryService.uploadMedia(user, id, file, mediaType);
-            return ResponseEntity.status(HttpStatus.CREATED).body("File uploaded successfully: " + fileUrl);
+            Media media = entryService.uploadMedia(user, id, file, mediaType);
+            return ResponseEntity.status(HttpStatus.CREATED).body(new MediaResponse(media, media.getUrl(), media.getFilename()));
         } catch (Exception e) {
             logger.error("Error uploading file: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload file");

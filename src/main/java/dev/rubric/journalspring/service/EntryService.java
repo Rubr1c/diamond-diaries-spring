@@ -389,7 +389,7 @@ public class EntryService {
         return entries;
     }
 
-    public String uploadMedia(User user, Long entryId, MultipartFile file, MediaType mediaType) {
+    public Media uploadMedia(User user, Long entryId, MultipartFile file, MediaType mediaType) {
         Entry entry = getEntryById(user, entryId);
 
         // Upload file to S3 with private access
@@ -407,9 +407,10 @@ public class EntryService {
         media.setMediaType(mediaType);
         media.setS3Key(s3Key);
         media.setUrl(s3Url);
+        media.setFilename(file.getOriginalFilename());
         mediaRepository.save(media);
 
-        return presignedUrl;
+        return media;
     }
 
     // Get all media for an entry with secure URLs
@@ -432,7 +433,7 @@ public class EntryService {
                 .map(media -> {
                     // Generate a fresh pre-signed URL for each media item
                     String presignedUrl = s3Service.generatePresignedUrl(media.getS3Key());
-                    return new MediaResponse(media, presignedUrl);
+                    return new MediaResponse(media, presignedUrl, media.getFilename());
                 })
                 .collect(Collectors.toList());
     }
