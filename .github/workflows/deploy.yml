@@ -2,7 +2,7 @@ name: Deploy to EC2 via SSH
 
 on:
   push:
-    branches: ["master"]
+    branches: [ "master" ]
 
 jobs:
   deploy:
@@ -23,8 +23,7 @@ jobs:
       - name: Add EC2 host to known_hosts
         run: |
           mkdir -p ~/.ssh
-          # grab the EC2 host’s SSH public keys (rsa/ecdsa/ed25519) and ignore errors
-          ssh-keyscan -t rsa,ecdsa,ed25519 -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
       - name: Deploy to EC2
@@ -37,31 +36,28 @@ jobs:
           echo "Connecting to ${USER}@${HOST}"
           echo "Deploying to ${PROJECT_PATH} on remote"
 
-          ssh -tt -o StrictHostKeyChecking=no \
-            -o ServerAliveInterval=30 \
-            -o ServerAliveCountMax=4 \
-            ${USER}@${HOST} << 'EOF'
+          ssh ${USER}@${HOST} << EOF
             set -e
-
-            # trust GitHub so `git fetch` never prompts
-            mkdir -p ~/.ssh
-            ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null || true
-
+            # Navigate to project directory
             cd ${PROJECT_PATH}
             echo "Current directory: $(pwd)"
 
+            # Reset local repo to match remote
             echo "Resetting code to origin/master..."
             git fetch origin master
             git reset --hard origin/master
             git clean -fd
 
+            # Write .env file
             echo "Writing .env file..."
             printf "%s\n" "${DOT_ENV_CONTENT}" > .env
             chmod 600 .env
 
+            # Tear down any existing services, including orphans
             echo "Stopping existing services..."
             docker-compose down --remove-orphans
 
+            # Build and start fresh
             echo "Building and starting services..."
             docker-compose up --build -d
 
