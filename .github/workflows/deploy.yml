@@ -34,10 +34,13 @@ jobs:
           DOT_ENV_CONTENT: ${{ secrets.DOT_ENV_FILE }}
         run: |
           echo "Connecting to ${USER}@${HOST}"
-          ssh ${USER}@${HOST} << 'EOF'
+          ssh ${USER}@${HOST} <<EOF
             set -e
+
+            # now expanded locally into the real path
             cd ${PROJECT_PATH}
-            echo "Current directory: $(pwd)"
+
+            echo "Current directory: \$(pwd)"
 
             echo "Cleaning up old Docker data…"
             sudo docker system prune -af
