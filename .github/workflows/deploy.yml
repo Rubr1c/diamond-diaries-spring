@@ -13,7 +13,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1  # shallow clone; remote reset handles sync
+          fetch-depth: 1
 
       - name: Set up SSH key
         uses: webfactory/ssh-agent@v0.9.0
