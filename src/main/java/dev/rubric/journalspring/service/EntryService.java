@@ -209,6 +209,26 @@ public class EntryService {
         }
 
         // Remove search tokens before deleting the entry
+        List<Media> mediaToDelete = mediaRepository.findAllByEntryId(entryId);
+        logger.debug("Found {} media records associated with entry {}", mediaToDelete.size(), entryId);
+
+        for (Media media : mediaToDelete) {
+            try {
+                logger.debug("Deleting media file from S3 with key: {}", media.getS3Key());
+                s3Service.deleteFile(media.getS3Key());
+            } catch (Exception e) {
+                // Log the error but continue trying to delete other media and the entry itself
+                logger.error("Failed to delete media file {} from S3 for entry {}: {}", media.getS3Key(), entryId, e.getMessage());
+                // Depending on requirements, you might want to re-throw or handle this differently
+            }
+        }
+
+        // 3. Delete media records from the database
+        if (!mediaToDelete.isEmpty()) {
+            mediaRepository.deleteAll(mediaToDelete);
+            logger.debug("Deleted {} media records from database for entry {}", mediaToDelete.size(), entryId);
+        }
+
         entry.getTags().clear();
         sharedEntryService.removeSharedEntry(user, entryId);
         searchService.removeEntryTokens(entry);
@@ -249,6 +269,20 @@ public class EntryService {
 
         if (details.wordCount() != null) {
             entry.setWordCount(details.wordCount());
+        }
+
+        if (details.folderId() != null) {
+            Folder folder = folderService.getFolder(user, details.folderId());
+            entry.setFolder(folder);
+        }
+
+        if (details.tagNames() != null) {
+            Set<Tag> tags = details.tagNames().stream()
+                            .map(name -> tagRepository.findByName(name))
+                            .filter(tag -> tag.isPresent())
+                            .map(tag -> tag.get())
+                            .collect(Collectors.toSet());
+            entry.setTags(tags);
         }
 
 
