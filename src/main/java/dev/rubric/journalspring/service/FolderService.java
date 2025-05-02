@@ -1,8 +1,10 @@
 package dev.rubric.journalspring.service;
 
 import dev.rubric.journalspring.exception.ApplicationException;
+import dev.rubric.journalspring.models.Entry;
 import dev.rubric.journalspring.models.Folder;
 import dev.rubric.journalspring.models.User;
+import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.FolderRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,9 +16,11 @@ import java.util.UUID;
 public class FolderService {
 
     private final FolderRepository folderRepository;
+    private final EntryRepository entryRepository;
 
-    public FolderService(FolderRepository folderRepository) {
+    public FolderService(FolderRepository folderRepository, EntryRepository entryRepository) {
         this.folderRepository = folderRepository;
+        this.entryRepository = entryRepository;
     }
 
     public void createFolder(User user, String name) {
@@ -64,10 +68,14 @@ public class FolderService {
     public void deleteFolder(User user, Long id) {
         Folder folder = getFolder(user, id);
 
-        if (!folder.getUser().getId().equals(user.getId())) {
-            throw new ApplicationException(
-                    String.format("User with id %d is not authorized", user.getId()),
-                    HttpStatus.UNAUTHORIZED);
+        List<Entry> entriesToUpdate = entryRepository.findAllByFolder(folder);
+
+        for (Entry entry : entriesToUpdate) {
+            entry.setFolder(null);
+        }
+
+        if (!entriesToUpdate.isEmpty()) {
+            entryRepository.saveAll(entriesToUpdate);
         }
 
         folderRepository.delete(folder);
