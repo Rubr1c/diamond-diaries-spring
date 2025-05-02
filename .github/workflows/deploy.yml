@@ -34,36 +34,29 @@ jobs:
           DOT_ENV_CONTENT: ${{ secrets.DOT_ENV_FILE }}
         run: |
           echo "Connecting to ${USER}@${HOST}"
-          echo "Deploying to ${PROJECT_PATH} on remote"
-
-          ssh ${USER}@${HOST} << EOF
+          ssh ${USER}@${HOST} << 'EOF'
             set -e
-            # Navigate to project directory
             cd ${PROJECT_PATH}
             echo "Current directory: $(pwd)"
 
             echo "Cleaning up old Docker data…"
-            docker system prune -af        # remove all stopped containers, unused images, build cache
-            docker volume prune -f 
+            sudo docker system prune -af
+            sudo docker volume prune -f
 
-            # Reset local repo to match remote
             echo "Resetting code to origin/master..."
             git fetch origin master
             git reset --hard origin/master
             git clean -fd
 
-            # Write .env file
             echo "Writing .env file..."
             printf "%s\n" "${DOT_ENV_CONTENT}" > .env
             chmod 600 .env
 
-            # Tear down any existing services, including orphans
-            echo "Stopping existing services..."
-            docker-compose down --remove-orphans
+            echo "Stopping existing services…"
+            sudo docker-compose down --remove-orphans
 
-            # Build and start fresh
-            echo "Building and starting services..."
-            docker-compose up --build -d
+            echo "Building and starting services…"
+            sudo docker-compose up --build -d
 
             echo "Deployment finished!"
           EOF
