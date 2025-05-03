@@ -4,7 +4,6 @@ import dev.rubric.journalspring.dto.EntryDto;
 import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.Media;
-import dev.rubric.journalspring.models.Tag;
 import dev.rubric.journalspring.models.User;
 import dev.rubric.journalspring.response.EntryResponse;
 import dev.rubric.journalspring.response.MediaResponse;
@@ -19,8 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
