@@ -3,6 +3,7 @@ package dev.rubric.journalspring.service;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.Folder;
 import dev.rubric.journalspring.models.User;
+import dev.rubric.journalspring.repository.EntryRepository;
 import dev.rubric.journalspring.repository.FolderRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +27,9 @@ public class FolderServiceUnitTests {
 
     @Mock
     private FolderRepository folderRepository;
+
+    @Mock
+    private EntryRepository entryRepository;
 
     @InjectMocks
     private FolderService folderService;
@@ -120,9 +125,12 @@ public class FolderServiceUnitTests {
         folder.setId(400L);
 
         when(folderRepository.findById(400L)).thenReturn(Optional.of(folder));
+        when(entryRepository.findAllByFolder(any(Folder.class))).thenReturn(Collections.emptyList());
 
         folderService.deleteFolder(user, 400L);
+
         verify(folderRepository, times(1)).delete(folder);
+         verify(entryRepository, times(1)).findAllByFolder(folder);
     }
 
     @Test
