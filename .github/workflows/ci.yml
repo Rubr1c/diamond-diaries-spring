@@ -18,22 +18,6 @@ jobs:
     #   run:
     #     working-directory: ./Journal-Spring # Uncomment and adjust if needed
 
-    # Service containers for dependencies (Alternative to docker-compose up/down)
-    # services:
-    #   postgres:
-    #     image: postgres:16
-    #     env:
-    #       POSTGRES_USER: ${{ secrets.DB_USERNAME }} # Use secrets
-    #       POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
-    #       POSTGRES_DB: ${{ secrets.DB_NAME }}
-    #     ports:
-    #       - 5432:5432
-    #     options: >-
-    #       --health-cmd pg_isready
-    #       --health-interval 10s
-    #       --health-timeout 5s
-    #       --health-retries 5
-
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout code
@@ -61,10 +45,8 @@ jobs:
         # If using working-directory, adjust the path:
         # run: chmod +x ./Journal-Spring/mvnw
 
-      # Start services using Docker Compose
+      # Start services using Docker Compose V2 command (docker compose)
       # Ensure your docker-compose.yml defines the necessary services (like postgres)
-      # Pass secrets as environment variables to the docker-compose command if needed
-      # Or ensure docker-compose.yml reads from an .env file populated by secrets
       - name: Start Docker Compose services
         env:
           # Map GitHub Secrets to environment variables used by docker-compose.yml or tests
@@ -73,9 +55,9 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
           # Add other secrets needed by docker-compose services if any
-        run: docker-compose up -d
+        run: docker compose up -d # Changed from docker-compose
         # If using working-directory, adjust the path:
-        # run: docker-compose -f ./Journal-Spring/docker-compose.yml up -d
+        # run: docker compose -f ./Journal-Spring/docker-compose.yml up -d
 
       # Optional: Wait for services (e.g., database) to be ready
       # This simple sleep might work, or use a more robust health check script
@@ -104,12 +86,12 @@ jobs:
         # If using working-directory, adjust the path:
         # run: ./Journal-Spring/mvnw test
 
-      # Stop Docker Compose services regardless of test success/failure
+      # Stop Docker Compose services regardless of test success/failure using V2 command
       - name: Stop Docker Compose services
         if: always() # Ensure cleanup runs even if tests fail
-        run: docker-compose down
+        run: docker compose down # Changed from docker-compose
         # If using working-directory, adjust the path:
-        # run: docker-compose -f ./Journal-Spring/docker-compose.yml down
+        # run: docker compose -f ./Journal-Spring/docker-compose.yml down
 
       # Optional: Upload test results (useful for debugging failures)
       - name: Upload test reports
