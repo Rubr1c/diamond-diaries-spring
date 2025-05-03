@@ -4,9 +4,9 @@ import dev.rubric.journalspring.models.Entry;
 import dev.rubric.journalspring.models.Folder;
 import dev.rubric.journalspring.models.Tag;
 import dev.rubric.journalspring.models.User;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.domain.Page;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 

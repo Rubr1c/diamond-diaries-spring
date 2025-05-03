@@ -4,6 +4,7 @@ import dev.rubric.journalspring.models.Tag;
 import dev.rubric.journalspring.repository.TagRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 
 @Service

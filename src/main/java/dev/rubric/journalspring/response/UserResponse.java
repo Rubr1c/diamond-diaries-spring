@@ -1,11 +1,9 @@
 package dev.rubric.journalspring.response;
 
-import dev.rubric.journalspring.models.User;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.Column;
+import dev.rubric.journalspring.models.User;
 
 import java.time.ZonedDateTime;
-import java.util.UUID;
 
 public class UserResponse {
     @JsonProperty

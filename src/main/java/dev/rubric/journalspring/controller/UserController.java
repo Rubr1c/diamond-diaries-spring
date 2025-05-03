@@ -1,19 +1,16 @@
 package dev.rubric.journalspring.controller;
 
 import dev.rubric.journalspring.dto.UpdateUserDto;
-import dev.rubric.journalspring.service.S3Service;
-import dev.rubric.journalspring.enums.MediaType;
 import dev.rubric.journalspring.exception.ApplicationException;
 import dev.rubric.journalspring.models.User;
 import dev.rubric.journalspring.response.UserResponse;
+import dev.rubric.journalspring.service.S3Service;
 import dev.rubric.journalspring.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.services.s3.model.S3Exception;

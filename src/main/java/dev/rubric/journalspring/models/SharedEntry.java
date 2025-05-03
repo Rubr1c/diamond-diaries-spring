@@ -3,7 +3,9 @@ package dev.rubric.journalspring.models;
 import jakarta.persistence.*;
 
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "shared_entries")
