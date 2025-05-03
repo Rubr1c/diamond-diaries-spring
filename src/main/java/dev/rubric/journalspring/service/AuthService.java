@@ -33,6 +33,19 @@ public class AuthService {
     private final MailService mailService;
     private final EntryRepository entryRepository;
 
+    public AuthService(
+            UserRepository userRepository,
+            AuthenticationManager authenticationManager,
+            PasswordEncoder passwordEncoder,
+            MailService mailService,
+            EntryRepository entryRepository) {
+        this.authenticationManager = authenticationManager;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.mailService = mailService;
+        this.entryRepository = entryRepository;
+    }
+
     public void initiatePasswordReset(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
@@ -110,19 +123,6 @@ public class AuthService {
         } catch (Exception e) {
             throw new ApplicationException("Failed to send password reset email", HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
-
-    public AuthService(
-            UserRepository userRepository,
-            AuthenticationManager authenticationManager,
-            PasswordEncoder passwordEncoder,
-            MailService mailService,
-            EntryRepository entryRepository) {
-        this.authenticationManager = authenticationManager;
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.mailService = mailService;
-        this.entryRepository = entryRepository;
     }
 
     private boolean passwordIsValid(String password) {
